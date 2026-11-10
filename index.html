@@ -1,0 +1,3819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Edublox City By geocity kepulauan</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Google Fonts: Fredoka & Nunito -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- MQTT.js & PeerJS (Dual Real-Time Cloud Sync agar SEMUA HP PASTI MUNCUL di Ruang Utama) -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      box-sizing: border-box;
+    }
+    input, textarea, select {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Nunito', sans-serif;
+      background-color: #38bdf8;
+      touch-action: none;
+    }
+    h1, h2, h3, h4, .font-fredoka {
+      font-family: 'Fredoka', sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-3d {
+      transition: all 0.1s ease;
+      position: relative;
+      top: 0;
+    }
+    .btn-3d:active {
+      top: 4px;
+      box-shadow: 0 0px 0 0 rgba(0,0,0,0.3) !important;
+    }
+    .btn-3d-blue {
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      box-shadow: 0 4px 0 0 #0369a1, 0 6px 12px rgba(0,0,0,0.25);
+      border: 2px solid #bae6fd;
+    }
+    .btn-3d-green {
+      background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+      box-shadow: 0 4px 0 0 #15803d, 0 6px 12px rgba(0,0,0,0.25);
+      border: 2px solid #bbf7d0;
+    }
+    .btn-3d-amber {
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      box-shadow: 0 4px 0 0 #b45309, 0 6px 12px rgba(0,0,0,0.25);
+      border: 2px solid #fde68a;
+    }
+    .btn-3d-rose {
+      background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+      box-shadow: 0 4px 0 0 #be123c, 0 6px 12px rgba(0,0,0,0.25);
+      border: 2px solid #fecdd3;
+    }
+    .btn-3d-purple {
+      background: linear-gradient(180deg, #c084fc 0%, #7e22ce 100%);
+      box-shadow: 0 4px 0 0 #581c87, 0 6px 12px rgba(0,0,0,0.25);
+      border: 2px solid #e9d5ff;
+    }
+    .btn-3d-slate {
+      background: linear-gradient(180deg, #64748b 0%, #334155 100%);
+      box-shadow: 0 4px 0 0 #1e293b, 0 6px 12px rgba(0,0,0,0.25);
+      border: 2px solid #cbd5e1;
+    }
+
+    .floating-label {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      pointer-events: none;
+      z-index: 15;
+      transition: opacity 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .roblox-chat-bubble {
+      position: relative;
+      background: #ffffff;
+      color: #0f172a;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      max-width: 220px;
+      white-space: normal;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      margin-bottom: 6px;
+      animation: popBubble 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .roblox-chat-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 7px 7px 0;
+      border-style: solid;
+      border-color: #ffffff transparent;
+      display: block;
+      width: 0;
+    }
+    @keyframes popBubble {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15,23,42,0.1); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+
+    body.placing-ornament #game-canvas { cursor: crosshair !important; }
+  </style>
+</head>
+<body class="relative select-none">
+
+  <!-- 3D CANVAS CONTAINER -->
+  <div id="canvas-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- FLOATING HTML LABELS & 3D BUBBLE CHAT -->
+  <div id="labels-container" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- RAYCAST PLACEMENT BANNER -->
+  <div id="raycast-banner" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-amber-400 text-slate-900 font-fredoka font-bold px-5 py-2.5 rounded-2xl border-4 border-white shadow-2xl flex items-center gap-3 animate-bounce">
+    <i class="fa-solid fa-location-crosshairs text-xl text-rose-600"></i>
+    <div>
+      <div class="text-xs uppercase tracking-wider text-rose-800">Mode Klik Tanah 3D Aktif!</div>
+      <div id="raycast-item-name" class="text-sm md:text-base">Ketuk tanah 3D di pulau super luas (800x800m) untuk membangun</div>
+    </div>
+    <button onclick="cancelRaycastPlacement()" class="bg-rose-600 text-white px-3 py-1 rounded-xl text-xs hover:bg-rose-700">Batal</button>
+  </div>
+
+  <!-- FLOATING TOGGLE HUD BUTTONS (Sembunyikan/Tampilkan Tools Atas & Bawah) -->
+  <div class="fixed right-2.5 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2">
+    <button onclick="toggleTopHUD()" id="btn-toggle-top" title="Sembunyikan/Tampilkan Tools Atas" class="btn-3d btn-3d-blue text-white w-10 h-10 md:w-11 md:h-11 rounded-2xl flex flex-col items-center justify-center text-xs font-bold shadow-lg">
+      <i class="fa-solid fa-chevron-up text-xs" id="icon-toggle-top"></i>
+      <span class="text-[8px] leading-none mt-0.5">Atas</span>
+    </button>
+    <button onclick="toggleAllHUD()" title="Mode Layar Penuh Bersih" class="btn-3d btn-3d-amber text-white w-10 h-10 md:w-11 md:h-11 rounded-2xl flex flex-col items-center justify-center text-xs font-bold shadow-lg">
+      <i class="fa-solid fa-expand text-xs"></i>
+      <span class="text-[8px] leading-none mt-0.5">HUD</span>
+    </button>
+    <button onclick="toggleBottomHUD()" id="btn-toggle-bottom" title="Sembunyikan/Tampilkan Tools Bawah" class="btn-3d btn-3d-purple text-white w-10 h-10 md:w-11 md:h-11 rounded-2xl flex flex-col items-center justify-center text-xs font-bold shadow-lg">
+      <i class="fa-solid fa-chevron-down text-xs" id="icon-toggle-bottom"></i>
+      <span class="text-[8px] leading-none mt-0.5">Bawah</span>
+    </button>
+  </div>
+
+  <!-- ==================== ROBLOX IN-GAME LIVE CHAT & DAFTAR USER DI RUANG UTAMA ==================== -->
+  <div id="roblox-chat-container" class="fixed left-2.5 top-20 md:top-24 z-35 w-72 sm:w-80 pointer-events-none flex flex-col gap-1.5">
+    <div class="pointer-events-auto flex flex-wrap items-center gap-1.5">
+      <button onclick="toggleChatBox()" class="btn-3d btn-3d-slate text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs flex items-center gap-1.5 shadow-lg">
+        <i class="fa-solid fa-comments text-sky-300"></i>
+        <span>Chat</span>
+        <span id="chat-unread-badge" class="hidden bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full">Baru</span>
+      </button>
+      <button onclick="toggleOnlineUsersPanel()" class="btn-3d btn-3d-green text-white px-2.5 py-1.5 rounded-xl font-fredoka font-bold text-xs flex items-center gap-1.5 shadow-lg">
+        <i class="fa-solid fa-users"></i>
+        <span id="btn-online-users-label">Ruang Utama (1)</span>
+      </button>
+      <button onclick="gatherEveryoneAtMainPlaza()" class="btn-3d btn-3d-amber text-white px-2.5 py-1.5 rounded-xl font-fredoka font-bold text-[11px] flex items-center gap-1 shadow-lg" title="Kumpulkan Karakter ke Plaza Ruang Utama">
+        <i class="fa-solid fa-location-dot"></i> <span>Plaza Utama</span>
+      </button>
+    </div>
+
+    <!-- Panel Daftar Semua User yang Tergabung di Halaman Ruang Utama -->
+    <div id="online-users-panel" class="pointer-events-auto bg-slate-900/85 backdrop-blur-md border-2 border-emerald-400/80 rounded-2xl p-2.5 shadow-2xl space-y-1.5 text-white">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-1">
+        <span class="font-fredoka font-bold text-[11px] text-emerald-300 flex items-center gap-1">
+          <i class="fa-solid fa-circle text-[8px] text-emerald-400 animate-ping"></i>
+          <span>Pemain di Halaman Ruang Utama:</span>
+        </span>
+        <button onclick="spawnBotFriendInMainRoom()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">
+          + Tambah Teman
+        </button>
+      </div>
+      <div id="online-users-list" class="max-h-28 overflow-y-auto space-y-1 pr-1 text-[11px]">
+        <!-- Diisi otomatis daftar semua user yang berada di ruang utama -->
+      </div>
+    </div>
+
+    <!-- Collapsible Chat Box -->
+    <div id="roblox-chat-box" class="pointer-events-auto bg-slate-900/80 backdrop-blur-md border-2 border-slate-700/90 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-2 transition-all duration-200">
+      <div id="chat-messages-feed" class="h-24 sm:h-28 overflow-y-auto space-y-1.5 pr-1 text-xs">
+        <div class="bg-sky-500/20 border border-sky-400/30 text-sky-200 px-2.5 py-1.5 rounded-xl text-[11px]">
+          🏝️ Semua user yang masuk otomatis berkumpul di <strong>Plaza Halaman Ruang Utama (0,0)</strong>! Klik nama teman di daftar atas untuk menghampirinya.
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1 overflow-x-auto pb-1">
+        <button onclick="sendQuickChat('Halo semua! Ayo kumpul di Plaza Utama! 👋')" class="shrink-0 bg-slate-800 hover:bg-slate-700 text-sky-200 border border-slate-600 rounded-lg px-2 py-0.5 text-[10px] font-bold">👋 Kumpul Plaza!</button>
+        <button onclick="sendQuickChat('Ayo menyeberang ke Pulau Natuna! ⚓')" class="shrink-0 bg-slate-800 hover:bg-slate-700 text-emerald-200 border border-slate-600 rounded-lg px-2 py-0.5 text-[10px] font-bold">⚓ Pulau Natuna</button>
+        <button onclick="sendQuickChat('Aku lagi kerjakan kuis di Gedung B! 🚢')" class="shrink-0 bg-slate-800 hover:bg-slate-700 text-amber-200 border border-slate-600 rounded-lg px-2 py-0.5 text-[10px] font-bold">🚢 Gedung B</button>
+        <button onclick="sendQuickChat('Semangat Post-Test Gedung E! 📐')" class="shrink-0 bg-slate-800 hover:bg-slate-700 text-purple-200 border border-slate-600 rounded-lg px-2 py-0.5 text-[10px] font-bold">📐 Gedung E</button>
+      </div>
+
+      <form onsubmit="handleChatSubmit(event)" class="flex items-center gap-1.5">
+        <input id="chat-input-text" type="text" maxlength="100" placeholder="Ketik pesan ke ruang utama..." class="flex-1 bg-slate-950/90 text-white placeholder-slate-400 text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-600 focus:border-sky-400 outline-none" />
+        <button type="submit" class="btn-3d btn-3d-blue text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== IN-GAME ROBLOX INDEPENDENT PERSONAL QUIZ HUD (MENDUKUNG 4 JENIS SOAL) ==================== -->
+  <div id="personal-roblox-quiz-hud" class="hidden fixed right-2.5 top-20 md:top-24 z-35 w-[92vw] max-w-sm pointer-events-auto">
+    <div class="bg-slate-900/95 backdrop-blur-md text-white rounded-3xl border-4 border-amber-400 shadow-2xl overflow-hidden flex flex-col max-h-[76vh]">
+      <div class="bg-gradient-to-r from-rose-600 to-amber-500 px-3.5 py-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span id="ig-quiz-icon" class="text-xl shrink-0">🧭</span>
+          <div class="truncate">
+            <div id="ig-quiz-bldg" class="text-[10px] font-extrabold uppercase tracking-wider text-amber-100">KUIS PRIBADI MANDIRI</div>
+            <div id="ig-quiz-title" class="font-fredoka font-bold text-xs truncate">Test Kemampuan Awal</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <select id="ig-quiz-switch" onchange="loadPersonalPhoneQuiz(this.value)" class="bg-black/25 text-white text-[10px] font-bold px-1.5 py-1 rounded-lg border border-white/30 outline-none"></select>
+          <button onclick="closePersonalPhoneQuiz()" class="bg-black/30 hover:bg-black/50 text-white w-6 h-6 rounded-lg text-xs font-bold">✕</button>
+        </div>
+      </div>
+
+      <div class="p-3 overflow-y-auto space-y-2.5 text-xs">
+        <div class="flex items-center justify-between bg-emerald-500/15 border border-emerald-400/40 text-emerald-200 px-2.5 py-1.5 rounded-xl text-[10px] font-bold">
+          <span id="ig-quiz-isolation-badge">🔒 Kuis Mandiri (Tidak mempengaruhi pemain lain)</span>
+          <span id="ig-quiz-player-score" class="text-amber-300 shrink-0 ml-1">💰 120 | ⭐ 50</span>
+        </div>
+
+        <div id="ig-quiz-summary" class="bg-sky-500/20 border border-sky-400/40 text-sky-100 p-2 rounded-xl text-[11px] leading-snug"></div>
+
+        <div class="flex items-center justify-between bg-slate-800 px-2.5 py-1.5 rounded-xl gap-1">
+          <div class="flex items-center gap-1.5">
+            <span id="ig-quiz-counter" class="font-fredoka font-bold text-amber-300 text-[11px]">Soal 1 / 4</span>
+            <span id="ig-quiz-type-badge" class="bg-indigo-600 text-white px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase">Pilihan Ganda</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="prevPersonalQuizQ()" class="bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">◀</button>
+            <button onclick="nextPersonalQuizQ()" class="bg-sky-600 hover:bg-sky-500 px-2.5 py-0.5 rounded text-[10px] font-bold">Berikutnya ▶</button>
+          </div>
+        </div>
+
+        <div id="ig-quiz-question" class="font-fredoka font-bold text-sm text-white bg-slate-800/90 p-3 rounded-2xl border border-slate-600 leading-relaxed">
+          Memuat soal...
+        </div>
+
+        <div id="ig-quiz-options" class="grid grid-cols-1 gap-1.5"></div>
+
+        <div id="ig-quiz-feedback" class="hidden p-2.5 rounded-2xl border-2 text-[11px] font-bold leading-snug"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOP HUD BAR ==================== -->
+  <header id="top-hud" class="fixed top-0 left-0 right-0 z-30 p-1.5 md:p-3 transition-transform duration-300 pointer-events-none">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-1.5 md:gap-2">
+
+      <!-- Left: Official Branding Banner & Room Status -->
+      <div class="pointer-events-auto flex items-center gap-2 bg-white/95 backdrop-blur-md px-2.5 py-1.5 md:px-3 md:py-2 rounded-2xl border-2 md:border-4 border-sky-400 shadow-xl max-w-full">
+        <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center text-white text-base md:text-xl shadow-inner shrink-0">
+          <i class="fa-solid fa-cubes-stacked"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="font-fredoka font-bold text-[11px] md:text-sm text-sky-900 leading-tight flex items-center gap-1.5 truncate">
+            <span class="truncate">Edublox City By geocity kepulauan</span>
+            <span class="hidden sm:inline-block bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full border border-emerald-300 font-extrabold shrink-0" id="hud-class-badge">XI Fase F</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-1 text-[10px] md:text-[11px] font-bold text-slate-600 mt-0.5">
+            <button onclick="openInviteLinkModal()" class="flex items-center gap-1 text-white bg-gradient-to-r from-emerald-500 to-teal-600 px-2 py-0.5 rounded-lg shadow hover:opacity-95">
+              <i class="fa-solid fa-share-nodes"></i>
+              <span>Ruang Utama: <strong id="hud-room-token">MARITIM-01</strong></span>
+            </button>
+            <span id="hud-peer-status" class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md border border-emerald-300 font-extrabold">
+              🟢 1 User di Ruang Utama
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: 360 Camera Controls & Teleport -->
+      <div class="pointer-events-auto flex flex-wrap items-center gap-1 bg-slate-900/85 backdrop-blur-md p-1 md:p-1.5 rounded-2xl border-2 border-slate-700 text-white shadow-xl">
+        <button onclick="rotateCameraBy(-0.35)" class="btn-3d btn-3d-slate px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[11px] md:text-xs font-bold" title="Putar Kamera Kiri">↺</button>
+        <button onclick="rotateCameraBy(0.35)" class="btn-3d btn-3d-slate px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[11px] md:text-xs font-bold" title="Putar Kamera Kanan">↻</button>
+        <button onclick="toggleAutoOrbit360()" id="btn-orbit-360" class="btn-3d btn-3d-blue px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[10px] md:text-xs font-bold">360°</button>
+        <select id="select-camera-focus" onchange="setCameraFocusTarget(this.value)" class="bg-amber-500 text-slate-950 font-fredoka font-bold text-[10px] md:text-xs px-2 py-1 md:py-1.5 rounded-xl border border-amber-200 cursor-pointer outline-none">
+          <option value="MY">🎯 Kamera: Karakter Saya</option>
+          <option value="PLAZA">🏛️ Kamera: Plaza Ruang Utama</option>
+          <option value="ALL">🎥 Kamera: Tengah Semua User</option>
+        </select>
+        <select id="select-teleport" onchange="teleportToBuilding(this.value)" class="bg-emerald-500 text-white font-fredoka font-bold text-[10px] md:text-xs px-2 py-1 md:py-1.5 rounded-xl border border-emerald-200 cursor-pointer outline-none max-w-[135px] md:max-w-none">
+          <option value="">🚀 Teleport Lokasi...</option>
+        </select>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="pointer-events-auto flex flex-wrap items-center gap-1 md:gap-1.5">
+        <button onclick="openInviteLinkModal()" class="btn-3d btn-3d-green text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1">
+          <i class="fa-solid fa-qrcode"></i> <span class="hidden sm:inline">Link Gabung</span>
+        </button>
+        <button onclick="openPersonalPhoneQuiz(null)" class="btn-3d btn-3d-rose text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1">
+          <i class="fa-solid fa-bolt"></i> <span>Kuis Saya!</span>
+        </button>
+        <button onclick="openQuickAddBuildingModal()" class="btn-3d btn-3d-purple text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1" title="Tambah Gedung Mata Pelajaran Baru">
+          <i class="fa-solid fa-building-circle-arrow-right"></i> <span>+ Gedung</span>
+        </button>
+        <button onclick="openModal('modal-canteen')" class="btn-3d btn-3d-amber text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1">
+          <i class="fa-solid fa-burger"></i> <span class="hidden md:inline">Kantin</span>
+        </button>
+        <button onclick="openModal('modal-ornaments')" class="btn-3d btn-3d-green text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1">
+          <i class="fa-solid fa-tree"></i> <span class="hidden lg:inline">+ Ornamen</span>
+        </button>
+        <button onclick="openTeacherModal()" class="btn-3d btn-3d-blue text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1" title="Custom Guru & AI Soal">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> <span class="hidden xl:inline">Guru & AI</span>
+        </button>
+        <button onclick="openSpreadsheetModal()" class="btn-3d btn-3d-green text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1" title="Rekap Nilai Spreadsheet">
+          <i class="fa-solid fa-file-excel"></i> <span class="hidden xl:inline">Rekap</span>
+        </button>
+        <button onclick="toggleBGM()" id="btn-bgm" class="btn-3d btn-3d-amber text-white px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold flex items-center gap-1">
+          <i class="fa-solid fa-music"></i> <span id="label-bgm" class="hidden sm:inline">OFF</span>
+        </button>
+        <button onclick="openModal('modal-main-menu')" class="btn-3d btn-3d-slate text-white px-2.5 py-1.5 md:py-2 rounded-xl text-[11px] md:text-xs font-fredoka font-bold" title="Lobby Halaman Ruang Utama">
+          <i class="fa-solid fa-house-user"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================== BOTTOM HUD: KONTROLER MASING-MASING USER ==================== -->
+  <footer id="bottom-hud" class="fixed bottom-0 left-0 right-0 z-30 p-2 md:p-3 transition-transform duration-300 pointer-events-none">
+    <div id="personal-phone-hud" class="max-w-[1400px] mx-auto flex items-end justify-between gap-2 pb-1">
+      <div class="pointer-events-auto bg-slate-900/80 backdrop-blur-md p-2.5 rounded-3xl border-2 border-white/30 shadow-2xl">
+        <div class="grid grid-cols-3 gap-1.5 w-32 h-32 sm:w-36 sm:h-36">
+          <div></div>
+          <button id="my-dpad-up" class="btn-3d btn-3d-slate rounded-2xl flex items-center justify-center text-xl font-bold text-white active:bg-sky-500">▲</button>
+          <div></div>
+          <button id="my-dpad-left" class="btn-3d btn-3d-slate rounded-2xl flex items-center justify-center text-xl font-bold text-white active:bg-sky-500">◀</button>
+          <div class="rounded-xl bg-slate-800/90 flex items-center justify-center text-[10px] font-fredoka font-bold text-sky-300 text-center leading-tight px-1" id="my-dpad-center-code">USER</div>
+          <button id="my-dpad-right" class="btn-3d btn-3d-slate rounded-2xl flex items-center justify-center text-xl font-bold text-white active:bg-sky-500">▶</button>
+          <div></div>
+          <button id="my-dpad-down" class="btn-3d btn-3d-slate rounded-2xl flex items-center justify-center text-xl font-bold text-white active:bg-sky-500">▼</button>
+          <div></div>
+        </div>
+      </div>
+
+      <div class="pointer-events-auto bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2 rounded-2xl border-2 shadow-xl flex flex-col items-center gap-1 mb-1" id="my-phone-status-pill">
+        <div class="flex items-center gap-2">
+          <span id="my-phone-badge" class="px-2 py-0.5 rounded-lg text-xs font-fredoka font-bold bg-rose-600">👑 P1</span>
+          <span id="my-phone-name" class="font-fredoka font-bold text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[180px]">Siswa</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs font-extrabold text-amber-300">
+          <span id="my-phone-coins">💰 120 Koin</span>
+          <span id="my-phone-xp">⭐ 50 XP</span>
+        </div>
+      </div>
+
+      <div class="pointer-events-auto flex flex-col items-end gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-1.5">
+          <button onclick="toggleSprintTurbo()" id="my-btn-sprint" class="btn-3d btn-3d-blue text-white px-2.5 py-1.5 rounded-2xl font-fredoka font-bold text-xs shadow-lg">
+            🏃 Sprint: ON
+          </button>
+          <button onclick="myPlayerToggleAuto()" id="my-btn-auto" class="btn-3d btn-3d-slate text-white px-2.5 py-1.5 rounded-2xl font-fredoka font-bold text-xs shadow-lg">
+            🖐️ Manual
+          </button>
+          <button onclick="openPersonalPhoneQuiz(null)" class="btn-3d btn-3d-rose text-white px-3 py-1.5 rounded-2xl font-fredoka font-bold text-xs shadow-lg">
+            ⚡ Kuis Saya
+          </button>
+        </div>
+        <button id="my-btn-jump" onclick="myPlayerJump()" class="btn-3d btn-3d-amber text-white w-20 h-20 sm:w-24 sm:h-24 rounded-full font-fredoka font-bold text-xs sm:text-sm shadow-2xl flex flex-col items-center justify-center gap-0.5 border-4 border-white">
+          <i class="fa-solid fa-angles-up text-xl"></i>
+          <span>LOMPAT</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== MODAL 1: LOBBY HALAMAN RUANG UTAMA (SEMUA USER BERGABUNG DI SINI) ==================== -->
+  <div id="modal-main-menu" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-3xl border-4 border-sky-400 shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 p-4 md:p-5 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-3xl shadow-inner">🏝️</div>
+          <div>
+            <span class="bg-emerald-400 text-slate-950 text-[10px] font-fredoka font-bold px-2.5 py-0.5 rounded-full uppercase">LOBBY HALAMAN RUANG UTAMA BERSAMA</span>
+            <h1 class="font-fredoka text-lg md:text-2xl font-bold tracking-wide mt-0.5">Edublox City By geocity kepulauan</h1>
+            <p class="text-xs text-sky-100 font-semibold">Semua user otomatis bergabung & berkumpul bersama di Plaza Halaman Ruang Utama!</p>
+          </div>
+        </div>
+        <button onclick="joinMainRoomLobby()" class="btn-3d btn-3d-green px-5 py-2.5 rounded-2xl font-fredoka font-bold text-xs md:text-sm">
+          🚀 Gabung Ruang Utama!
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 md:p-6 overflow-y-auto space-y-5">
+        <!-- Kartu Identitas Karakter Saya & Token Ruang Utama -->
+        <div class="bg-gradient-to-br from-emerald-50 to-sky-50 p-5 rounded-3xl border-2 border-emerald-400 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200 pb-3">
+            <div>
+              <h2 class="font-fredoka text-base md:text-lg font-bold text-emerald-950">👤 Buat Karaktermu untuk Masuk ke Halaman Ruang Utama</h2>
+              <p class="text-xs text-slate-600">Pastikan Kode Ruang Utama sama agar seluruh HP siswa bertemu di Plaza Utama yang sama!</p>
+            </div>
+            <button onclick="openInviteLinkModal()" class="btn-3d btn-3d-blue text-white px-4 py-2 rounded-xl font-fredoka font-bold text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-qrcode"></i> <span>Bagikan Link & QR Ruang Utama</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-emerald-950 mb-1">1. Kode Ruang Utama Bersama:</label>
+              <input id="menu-room-token" type="text" value="MARITIM-01" onchange="switchRoomTokenChannel(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-emerald-500 font-fredoka font-bold text-base uppercase text-center text-emerald-950 bg-white" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-emerald-950 mb-1">2. Nama Kamu (Tampil di Atas Kepala 3D):</label>
+              <input id="menu-my-name" type="text" placeholder="Ketik nama panggilanmu..." class="w-full px-3.5 py-2.5 rounded-xl border-2 border-sky-400 font-bold text-sm text-slate-900 bg-white" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-emerald-950 mb-1">3. Pilih Avatar Roblox 3D:</label>
+              <select id="menu-my-avatar" class="w-full px-3 py-2.5 rounded-xl border-2 border-sky-400 font-bold text-xs text-slate-900 bg-white">
+                <option value="0">👑 Raja Blox Ceria (Mahkota Emas)</option>
+                <option value="1">🐱 Neko Kucing Pink (Telinga Kucing)</option>
+                <option value="2">🚀 Kapten Bintang (Antena Luar Angkasa)</option>
+                <option value="3">🛡️ Kesatria Zamrud (Topi Merah)</option>
+                <option value="4">🧙 Penyihir Pelangi (Topi Penyihir)</option>
+                <option value="5">😎 Noob Roblox Klasik</option>
+              </select>
+            </div>
+          </div>
+
+          <button onclick="joinMainRoomLobby()" class="btn-3d btn-3d-green text-white w-full py-3.5 rounded-2xl font-fredoka font-bold text-base md:text-lg shadow-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-door-open"></i>
+            <span>GABUNG KE HALAMAN RUANG UTAMA SEKARANG!</span>
+          </button>
+        </div>
+
+        <!-- Daftar Live Semua User yang Sudah Berada di Halaman Ruang Utama -->
+        <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
+              <h3 class="font-fredoka font-bold text-sm md:text-base text-slate-800">
+                👥 User yang Sedang Berada di Halaman Ruang Utama (<span id="lobby-online-count">1</span> User)
+              </h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="spawnBotFriendInMainRoom()" class="btn-3d btn-3d-amber text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">
+                + Tambah Teman Simulasi di Ruang Utama
+              </button>
+              <button onclick="openQuickAddBuildingModal()" class="btn-3d btn-3d-purple text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">
+                + Tambah Gedung 3D
+              </button>
+            </div>
+          </div>
+
+          <div id="lobby-players-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            <!-- Diisi otomatis daftar kartu user yang sudah di ruang utama -->
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-100 px-6 py-3 border-t flex items-center justify-between text-xs font-bold text-slate-500">
+        <span>Edublox City By geocity kepulauan • Sinkronisasi Cloud MQTT + WebRTC P2P Aktif</span>
+        <span>Pulau Utama 800x800m</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL BUILDER TAMBAH GEDUNG 3D CEPAT ==================== -->
+  <div id="modal-add-building" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-3xl border-4 border-purple-500 shadow-2xl max-w-xl w-full overflow-hidden">
+      <div class="bg-gradient-to-r from-purple-600 via-indigo-600 to-sky-500 p-4 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">🏢</span>
+          <div>
+            <h2 class="font-fredoka text-lg md:text-xl font-bold">Tambah Gedung Mata Pelajaran 3D Baru</h2>
+            <p class="text-xs text-purple-100">Otomatis muncul di Halaman Ruang Utama semua user lengkap dengan Papan Atap 3D!</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-add-building')" class="btn-3d btn-3d-rose px-3 py-1 rounded-xl font-bold text-xs">✕</button>
+      </div>
+
+      <div class="p-5 space-y-3.5 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Kode Gedung:</label>
+            <input id="new-bldg-code" type="text" value="Gedung F" class="w-full px-3 py-2 rounded-xl border-2 border-purple-300 font-fredoka font-bold text-sm" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Ikon & Warna Dinding 3D:</label>
+            <div class="flex items-center gap-2">
+              <input id="new-bldg-icon" type="text" value="🏝️" class="w-14 px-2 py-2 rounded-xl border-2 border-purple-300 text-center text-base font-bold" />
+              <input id="new-bldg-color" type="color" value="#14b8a6" class="flex-1 h-10 rounded-xl border-2 border-purple-300 cursor-pointer" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Nama Gedung / Mata Pelajaran (Tampil di Papan Atap 3D):</label>
+          <input id="new-bldg-name" type="text" value="Gedung F – Konservasi Laut & Wallacea" class="w-full px-3 py-2 rounded-xl border-2 border-purple-300 font-bold text-sm" />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Ringkasan Materi / Topik Gedung:</label>
+          <textarea id="new-bldg-summary" rows="2" class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 font-semibold">Eksplorasi potensi sumber daya kelautan Indonesia, Alur Laut Kepulauan Indonesia (ALKI), dan pelestarian satwa endemik Nusantara.</textarea>
+        </div>
+
+        <div class="bg-purple-50 p-3.5 rounded-2xl border-2 border-purple-200 space-y-2">
+          <label class="block font-fredoka font-bold text-purple-950">📍 Pilih Metode Penempatan Lokasi Gedung di Peta 3D:</label>
+          <select id="new-bldg-place-mode" onchange="toggleNewBldgCoords()" class="w-full px-3 py-2 rounded-xl border-2 border-purple-400 font-bold text-xs">
+            <option value="AUTO">🔄 Otomatis di Lingkar Luar Plaza Kota (Rapi & Terhubung Jalan Kuning)</option>
+            <option value="RAYCAST">🖱️ Klik Langsung di Tanah 3D (Pilih Titik Sendiri di Peta)</option>
+            <option value="PLAYER">🏃 Di Dekat Posisi Karakter Saya Saat Ini</option>
+            <option value="MANUAL">📐 Input Koordinat X & Z Manual</option>
+          </select>
+          <div id="new-bldg-manual-box" class="hidden grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="text-[10px] font-bold text-slate-600">Koordinat X (-350 s/d 350):</label>
+              <input id="new-bldg-x" type="number" value="0" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold" />
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-600">Koordinat Z (-350 s/d 350):</label>
+              <input id="new-bldg-z" type="number" value="260" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button onclick="closeModal('modal-add-building')" class="btn-3d btn-3d-slate text-white px-4 py-2.5 rounded-xl font-fredoka font-bold text-xs">Batal</button>
+          <button onclick="confirmBuildNewBuilding()" class="btn-3d btn-3d-green text-white px-5 py-2.5 rounded-xl font-fredoka font-bold text-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-hammer"></i> <span>Bangun Gedung 3D Sekarang!</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL GENERATOR LINK GABUNG RUANG UTAMA & QR CODE ==================== -->
+  <div id="modal-invite-link" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-3xl border-4 border-emerald-400 shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-500 via-teal-600 to-sky-600 p-4 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center text-2xl">🔗</div>
+          <div>
+            <h2 class="font-fredoka text-lg md:text-xl font-bold">Link Gabung Halaman Ruang Utama & QR Code</h2>
+            <p class="text-xs text-emerald-100">Semua siswa yang klik Link ini otomatis bergabung di Plaza Halaman Ruang Utama yang sama!</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-invite-link')" class="btn-3d btn-3d-rose px-3 py-1.5 rounded-xl font-bold text-xs">✕ Tutup</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <div id="local-file-warning" class="hidden bg-amber-50 border-2 border-amber-400 p-3 rounded-2xl text-xs text-amber-900 font-semibold">
+          ⚠️ <strong>Perhatian:</strong> File sedang dibuka dari penyimpanan lokal (<code>file:///</code>). Unggah file <code>index.html</code> ini ke GitHub Pages / Netlify Drop agar link dapat diakses dari HP siswa.
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-2xl border-2 border-slate-200">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Kode Ruang Utama:</label>
+            <input id="invite-room-token" type="text" value="MARITIM-01" oninput="updateGeneratedLinks()" class="w-full px-3 py-2 rounded-xl border-2 border-emerald-400 font-fredoka font-bold text-sm uppercase text-center text-emerald-950" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">URL Dasar Aplikasi:</label>
+            <input id="invite-base-url" type="text" oninput="updateGeneratedLinks()" class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 font-semibold text-xs text-slate-700" />
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-emerald-50 to-sky-50 border-2 border-emerald-300 rounded-2xl p-4 flex flex-col md:flex-row items-center gap-4">
+          <div class="bg-white p-2.5 rounded-2xl border-2 border-emerald-400 shadow-md shrink-0 text-center">
+            <img id="invite-qr-img" src="" alt="QR Code Gabung" class="w-36 h-36 mx-auto rounded-lg" />
+            <span class="text-[10px] font-fredoka font-bold text-emerald-800 block mt-1">📱 Scan QR Masuk Ruang Utama</span>
+          </div>
+          <div class="flex-1 space-y-2.5 w-full">
+            <span class="bg-emerald-600 text-white text-[10px] font-fredoka font-bold px-2.5 py-0.5 rounded-full">1 LINK UNTUK SEMUA USER DI RUANG UTAMA</span>
+            <h3 class="font-fredoka font-bold text-base text-slate-800">Klik Link -> Otomatis Berkumpul di Halaman Ruang Utama</h3>
+            <input id="invite-master-link" type="text" readonly class="w-full px-3 py-2 rounded-xl bg-white border-2 border-emerald-400 text-xs font-bold text-emerald-900 select-all" />
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button onclick="copyInviteLink('invite-master-link')" class="btn-3d btn-3d-green text-white px-4 py-2 rounded-xl font-fredoka font-bold text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-copy"></i> <span>Salin Link Ruang Utama</span>
+              </button>
+              <button onclick="shareToWhatsApp('invite-master-link')" class="btn-3d btn-3d-blue text-white px-4 py-2 rounded-xl font-fredoka font-bold text-xs flex items-center gap-1.5">
+                <i class="fa-brands fa-whatsapp text-sm"></i> <span>Kirim ke Grup WhatsApp</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: KANTIN JAJANAN EDUBLOX ==================== -->
+  <div id="modal-canteen" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-3xl border-4 border-amber-400 shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">🍔</span>
+          <div>
+            <h2 class="font-fredoka text-xl font-bold">Kantin Jajanan Edublox City</h2>
+            <p class="text-xs text-amber-100">Tukarkan Koin pribadimu hasil kuis mandiri dengan jajanan lezat untuk Bonus XP!</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-canteen')" class="btn-3d btn-3d-rose px-3 py-1.5 rounded-xl font-bold text-xs">✕ Tutup</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <div class="flex flex-wrap items-center justify-between bg-amber-50 p-3 rounded-2xl border-2 border-amber-200 gap-2">
+          <span class="font-fredoka font-bold text-sm text-amber-950" id="canteen-buyer-label">Dompet Karakter Saya:</span>
+          <div id="canteen-buyer-wallet" class="font-fredoka font-bold text-sm bg-white px-4 py-1.5 rounded-xl border border-amber-300 text-amber-900">
+            💰 Koin: 120 | ⭐ XP: 50
+          </div>
+        </div>
+        <div id="canteen-items-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: BUILDER ORNAMEN & LITERASI 3D ==================== -->
+  <div id="modal-ornaments" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-3xl border-4 border-emerald-400 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">🌳</span>
+          <div>
+            <h2 class="font-fredoka text-xl font-bold">Builder Ornamen & Pojok Literasi 3D</h2>
+            <p class="text-xs text-emerald-100">Hiasi pulau super luas Edublox City (800x800m) dengan Gazebo Literasi, Sakura, Kucing Oyen, dan Air Mancur!</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-ornaments')" class="btn-3d btn-3d-rose px-3 py-1.5 rounded-xl font-bold text-xs">✕ Tutup</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <div class="bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-300 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block font-fredoka font-bold text-xs text-emerald-950 mb-1">1. Metode Lokasi Penempatan:</label>
+            <select id="ornament-place-mode" onchange="toggleOrnamentCoordInputs()" class="w-full px-3 py-2 rounded-xl border-2 border-emerald-400 font-bold text-xs">
+              <option value="RAYCAST">🖱️ Klik Langsung di Tanah Arena 3D</option>
+              <option value="PLAYER">🏃 Di Dekat Karakter Saya</option>
+              <option value="UTARA">🌲 Zona Taman Utara</option>
+              <option value="BARAT">🌸 Zona Taman Barat</option>
+              <option value="TIMUR">🌻 Zona Taman Timur</option>
+              <option value="SELATAN">🌴 Zona Taman Selatan</option>
+              <option value="PINGGIR">🏡 Pinggir Kota Asri</option>
+              <option value="MANUAL">📍 Input Koordinat X & Z Manual</option>
+            </select>
+          </div>
+          <div id="ornament-manual-coords" class="hidden flex items-end gap-2">
+            <div>
+              <label class="block font-bold text-[11px] text-slate-600">X (-370 s/d 370)</label>
+              <input id="ornament-coord-x" type="number" value="65" class="w-full px-2.5 py-1.5 rounded-xl border-2 border-slate-300 text-xs font-bold" />
+            </div>
+            <div>
+              <label class="block font-bold text-[11px] text-slate-600">Z (-370 s/d 370)</label>
+              <input id="ornament-coord-z" type="number" value="65" class="w-full px-2.5 py-1.5 rounded-xl border-2 border-slate-300 text-xs font-bold" />
+            </div>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block font-fredoka font-bold text-xs text-emerald-950 mb-1">2. Kutipan Pojok Baca / Mading Literasi:</label>
+            <input id="ornament-literacy-text" type="text" value="Indonesia memiliki 17.500+ pulau dan terletak di antara Garis Wallace & Weber yang kaya biodiversitas!" class="w-full px-3 py-2 rounded-xl border-2 border-emerald-400 text-xs font-semibold" />
+          </div>
+        </div>
+        <div id="ornament-catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 5: PANEL CUSTOM GURU, TAMBAH GEDUNG & 4 BENTUK JENIS SOAL ==================== -->
+  <div id="modal-teacher" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 md:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border-4 border-indigo-500 shadow-2xl max-w-6xl w-full max-h-[94vh] flex flex-col overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 p-4 text-white flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">👨‍🏫</span>
+          <div>
+            <h2 class="font-fredoka text-lg md:text-xl font-bold">Panel Kustomisasi Guru — Edublox City By geocity kepulauan</h2>
+            <p class="text-xs text-sky-100">Kelola Gedung 3D, 4 Bentuk Jenis Soal (PG, Benar/Salah, Isian, Kompleks), & AI Generator Soal</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-teacher')" class="btn-3d btn-3d-rose px-3 py-1.5 rounded-xl font-bold text-xs">✕ Tutup</button>
+      </div>
+
+      <div class="p-4 md:p-6 overflow-y-auto space-y-6 flex-1">
+        <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nama Kelas / Instansi:</label>
+            <input id="teacher-class-input" type="text" value="XI Fase F - SMAN 1 Katang Bidare" class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 font-bold text-xs" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Judul Monumen & Arena 3D:</label>
+            <input id="teacher-arena-title" type="text" value="Edublox City By geocity kepulauan" class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 font-bold text-xs" />
+          </div>
+          <button onclick="saveArenaIdentity()" class="btn-3d btn-3d-blue text-white px-4 py-2 rounded-xl font-fredoka font-bold text-xs">
+            💾 Simpan Identitas Arena
+          </button>
+        </div>
+
+        <div class="bg-indigo-50 p-4 rounded-2xl border-2 border-indigo-200 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-fredoka font-bold text-indigo-950 text-base">🏢 Kelola Gedung Mata Pelajaran 3D (Beserta Papan Nama Atap)</h3>
+            <div class="flex items-center gap-2">
+              <button onclick="openQuickAddBuildingModal()" class="btn-3d btn-3d-green text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">
+                + Builder Tambah Gedung Baru (F, G, dst.)
+              </button>
+              <button onclick="deleteSelectedBuilding()" class="btn-3d btn-3d-rose text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">
+                🗑️ Hapus Gedung Ini
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-indigo-900">Pilih Gedung:</label>
+              <select id="teacher-bldg-select" onchange="loadBuildingIntoTeacherEditor(this.value)" class="w-full px-2.5 py-2 rounded-xl border-2 border-indigo-400 font-fredoka font-bold text-xs"></select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-indigo-900">Kode Gedung:</label>
+              <input id="teacher-bldg-code" type="text" class="w-full px-2.5 py-2 rounded-xl border-2 border-slate-300 font-bold text-xs" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-bold text-indigo-900">Nama Mata Pelajaran / Topik Gedung:</label>
+              <input id="teacher-bldg-name" type="text" class="w-full px-2.5 py-2 rounded-xl border-2 border-slate-300 font-bold text-xs" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-900">Ikon:</label>
+                <input id="teacher-bldg-icon" type="text" class="w-full px-2.5 py-2 rounded-xl border-2 border-slate-300 font-bold text-xs text-center" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-900">Warna 3D:</label>
+                <input id="teacher-bldg-color" type="color" class="w-full h-9 rounded-xl border-2 border-slate-300 cursor-pointer" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-indigo-900">Ringkasan Materi / Panduan Diskusi / Proyek:</label>
+            <textarea id="teacher-bldg-summary" rows="2" class="w-full px-3 py-2 rounded-xl border-2 border-slate-300 text-xs font-semibold"></textarea>
+          </div>
+
+          <button onclick="saveBuildingMetadata()" class="btn-3d btn-3d-amber text-white px-4 py-2 rounded-xl font-fredoka font-bold text-xs">
+            🔄 Perbarui Gedung 3D & Papan Nama Atap
+          </button>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border-2 border-purple-300 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="font-fredoka font-bold text-purple-950 text-base flex items-center gap-2">
+                <i class="fa-solid fa-robot text-purple-600"></i>
+                <span>AI Generator Soal Otomatis (Mendukung 4 Bentuk Jenis Soal)</span>
+              </h3>
+            </div>
+            <input id="gemini-api-key" type="password" placeholder="Opsional: Gemini API Key..." class="px-3 py-1.5 rounded-xl border border-purple-300 text-xs w-52" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div class="md:col-span-2">
+              <label class="block text-[11px] font-bold text-purple-900">Perintah / Topik Soal:</label>
+              <input id="ai-topic-prompt" type="text" value="Indonesia sebagai Poros Maritim Dunia, Persebaran Flora Fauna (Garis Wallace & Weber), dan Keliling Bangun Datar" class="w-full px-3 py-2 rounded-xl border-2 border-purple-400 text-xs font-bold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-purple-900">Bentuk / Jenis Soal:</label>
+              <select id="ai-question-type" class="w-full px-3 py-2 rounded-xl border-2 border-purple-400 text-xs font-bold">
+                <option value="MIXED" selected>🎯 Campuran 4 Jenis Soal</option>
+                <option value="PG">🅰️ Pilihan Ganda (A/B/C/D)</option>
+                <option value="BS">⚖️ Benar / Salah</option>
+                <option value="ISIAN">✍️ Isian Singkat / Angka</option>
+                <option value="KOMPLEKS">☑️ Pilihan Ganda Kompleks (Multi-Pilih)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-purple-900">Jumlah Soal:</label>
+              <select id="ai-question-count" class="w-full px-3 py-2 rounded-xl border-2 border-purple-400 text-xs font-bold">
+                <option value="4" selected>4 Soal</option>
+                <option value="6">6 Soal</option>
+                <option value="8">8 Soal</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-purple-900">Mode Pengisian:</label>
+              <select id="ai-replace-mode" class="w-full px-3 py-2 rounded-xl border-2 border-purple-400 text-xs font-bold">
+                <option value="APPEND">Tambahkan ke Soal</option>
+                <option value="REPLACE">Ganti Soal Lama</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="generateQuestionsWithAI()" class="btn-3d btn-3d-purple text-white px-5 py-2.5 rounded-xl font-fredoka font-bold text-xs flex items-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Buat Soal Sesuai Bentuk yang Dipilih!</span>
+            </button>
+            <span id="ai-status-msg" class="text-xs font-bold text-purple-800"></span>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-fredoka font-bold text-slate-800 text-base">📝 Daftar Soal pada Gedung Terpilih (4 Bentuk Jenis Soal)</h3>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button onclick="addBlankQuestionToBuilding('PG')" class="btn-3d btn-3d-blue text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">+ Soal Pilihan Ganda</button>
+              <button onclick="addBlankQuestionToBuilding('BS')" class="btn-3d btn-3d-amber text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">+ Soal Benar/Salah</button>
+              <button onclick="addBlankQuestionToBuilding('ISIAN')" class="btn-3d btn-3d-green text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">+ Soal Isian Singkat</button>
+              <button onclick="addBlankQuestionToBuilding('KOMPLEKS')" class="btn-3d btn-3d-purple text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">+ Soal PG Kompleks</button>
+            </div>
+          </div>
+          <div id="teacher-questions-list" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 6: REKAP NILAI & EKSPOR SPREADSHEET ==================== -->
+  <div id="modal-spreadsheet" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 md:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border-4 border-emerald-500 shadow-2xl max-w-6xl w-full max-h-[94vh] flex flex-col overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-600 to-green-500 p-4 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">📊</span>
+          <div>
+            <h2 class="font-fredoka text-xl font-bold">Rekap Nilai Mandiri Murid & Ekspor Spreadsheet</h2>
+            <p class="text-xs text-emerald-100">Unduh CSV Excel, Salin Tabel (Ctrl+V), atau Auto-Sync ke Google Sheets</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-spreadsheet')" class="btn-3d btn-3d-rose px-3 py-1.5 rounded-xl font-bold text-xs">✕ Tutup</button>
+      </div>
+
+      <div class="p-4 md:p-6 overflow-y-auto space-y-5 flex-1">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-sky-50 border-2 border-sky-200 p-3 rounded-2xl">
+            <div class="text-xs font-bold text-sky-700">Total Aktivitas Menjawab</div>
+            <div id="stat-total-logs" class="font-fredoka text-2xl font-bold text-sky-950">0</div>
+          </div>
+          <div class="bg-emerald-50 border-2 border-emerald-200 p-3 rounded-2xl">
+            <div class="text-xs font-bold text-emerald-700">Jawaban Benar</div>
+            <div id="stat-correct-logs" class="font-fredoka text-2xl font-bold text-emerald-950">0</div>
+          </div>
+          <div class="bg-amber-50 border-2 border-amber-200 p-3 rounded-2xl">
+            <div class="text-xs font-bold text-amber-700">Rata-Rata Akurasi</div>
+            <div id="stat-accuracy" class="font-fredoka text-2xl font-bold text-amber-950">0%</div>
+          </div>
+          <div class="bg-purple-50 border-2 border-purple-200 p-3 rounded-2xl">
+            <div class="text-xs font-bold text-purple-700">Total User di Ruang Utama</div>
+            <div id="stat-player-count" class="font-fredoka text-2xl font-bold text-purple-950">1</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="downloadCSVSpreadsheet()" class="btn-3d btn-3d-green text-white px-4 py-2.5 rounded-xl font-fredoka font-bold text-xs flex items-center gap-2">
+            <i class="fa-solid fa-file-csv"></i> <span>1. Download File Excel / CSV (.csv)</span>
+          </button>
+          <button onclick="copyTSVToClipboard()" class="btn-3d btn-3d-blue text-white px-4 py-2.5 rounded-xl font-fredoka font-bold text-xs flex items-center gap-2">
+            <i class="fa-solid fa-copy"></i> <span>2. Salin Tabel (Copy-Paste ke Sheets)</span>
+          </button>
+          <button onclick="clearScoreLogs()" class="btn-3d btn-3d-rose text-white px-3 py-2.5 rounded-xl font-fredoka font-bold text-xs ml-auto">
+            🗑️ Reset Log
+          </button>
+        </div>
+
+        <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-fredoka font-bold text-sm text-slate-800">☁️ 3. Auto-Sync Google Spreadsheet (Webhook Apps Script)</h3>
+            <button onclick="copyAppsScriptCode()" class="text-xs bg-indigo-100 text-indigo-800 px-3 py-1 rounded-lg font-bold hover:bg-indigo-200">
+              📋 Salin Kode Apps Script <code>doPost(e)</code>
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <input id="webhook-url-input" type="url" placeholder="Tempel URL Web App Google Apps Script..." class="flex-1 px-3 py-2 rounded-xl border-2 border-slate-300 text-xs font-semibold" />
+            <button onclick="saveWebhookURL()" class="btn-3d btn-3d-amber text-white px-4 py-2 rounded-xl font-fredoka font-bold text-xs">
+              Simpan Auto-Sync
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto border-2 border-slate-200 rounded-2xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-800 text-white font-fredoka">
+                <th class="p-2.5">Waktu</th>
+                <th class="p-2.5">Kelas</th>
+                <th class="p-2.5">Nama Murid</th>
+                <th class="p-2.5">Gedung</th>
+                <th class="p-2.5">Jenis Soal</th>
+                <th class="p-2.5">Pertanyaan</th>
+                <th class="p-2.5">Jawab</th>
+                <th class="p-2.5">Kunci</th>
+                <th class="p-2.5">Status</th>
+                <th class="p-2.5">Poin</th>
+                <th class="p-2.5">Skor Total</th>
+              </tr>
+            </thead>
+            <tbody id="spreadsheet-table-body" class="divide-y divide-slate-200 bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 8: LITERACY GAZEBO POPUP ==================== -->
+  <div id="modal-literacy-read" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-amber-50 rounded-3xl border-4 border-amber-500 shadow-2xl max-w-lg w-full p-6 text-center space-y-4">
+      <div class="text-5xl">📖</div>
+      <h3 class="font-fredoka text-xl font-bold text-amber-950">Pojok Baca & Literasi Geografi</h3>
+      <p id="literacy-popup-quote" class="text-sm md:text-base font-bold text-slate-800 bg-white p-4 rounded-2xl border-2 border-amber-300 leading-relaxed"></p>
+      <button onclick="closeModal('modal-literacy-read')" class="btn-3d btn-3d-amber text-white px-6 py-2 rounded-xl font-fredoka font-bold text-sm">
+        Selesai Membaca (+10 XP Pribadi)
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast-box" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 translate-y-[-10px]">
+    <div id="toast-text" class="bg-slate-900/95 text-white font-fredoka font-bold text-xs md:text-sm px-5 py-2.5 rounded-2xl border-2 border-amber-400 shadow-2xl text-center"></div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION SCRIPT ==================== -->
+  <script>
+    /*************************************************************************
+     * 1. DATA & KONFIGURASI UTAMA ("Edublox City By geocity kepulauan")
+     *    - Sistem UID Unik Per Perangkat: Semua user otomatis bergabung di
+     *      Halaman Ruang Utama (Central Plaza 0,0) tanpa saling menimpa!
+     *    - Sinkronisasi Cloud MQTT (WebSockets) + PeerJS WebRTC + LocalChannel
+     *************************************************************************/
+    const APP_TITLE = "Edublox City By geocity kepulauan";
+    const ISLAND_SIZE = 800;
+    const WORLD_BOUND = 520;
+    let classIdentity = "XI Fase F - SMAN 1 Katang Bidare";
+    let monumentTitle = "Edublox City By geocity kepulauan";
+    let currentRoomToken = "MARITIM-01";
+    let sprintTurboActive = true;
+    let googleWebhookUrl = localStorage.getItem("edublox_webhook_url") || "";
+
+    const AVATAR_PRESETS = [
+      { id: "raja", name: "Raja Blox Ceria (Mahkota Emas)", emoji: "👑", torsoColor: "#e11d48", legColor: "#1e3a8a", headColor: "#fde047", hatType: "CROWN" },
+      { id: "neko", name: "Neko Kucing Pink (Telinga Kucing)", emoji: "🐱", torsoColor: "#ec4899", legColor: "#9d174d", headColor: "#fef08a", hatType: "CATEARS" },
+      { id: "kapten", name: "Kapten Bintang (Antena Angkasa)", emoji: "🚀", torsoColor: "#0284c7", legColor: "#0f172a", headColor: "#fde047", hatType: "ANTENNA" },
+      { id: "kesatria", name: "Kesatria Zamrud (Topi Merah)", emoji: "🛡️", torsoColor: "#10b981", legColor: "#064e3b", headColor: "#fde047", hatType: "REDCAP" },
+      { id: "penyihir", name: "Penyihir Pelangi (Topi Kerucut)", emoji: "🧙", torsoColor: "#9333ea", legColor: "#3b0764", headColor: "#fde047", hatType: "WIZARD" },
+      { id: "noob", name: "Noob Roblox Klasik", emoji: "😎", torsoColor: "#2563eb", legColor: "#65a30d", headColor: "#facc15", hatType: "NONE" }
+    ];
+
+    const BADGE_PALETTE = ["#e11d48", "#0284c7", "#10b981", "#9333ea", "#f97316", "#14b8a6", "#ec4899", "#6366f1"];
+
+    const QUESTION_TYPE_LABELS = {
+      PG: "🅰️ Pilihan Ganda",
+      BS: "⚖️ Benar / Salah",
+      ISIAN: "✍️ Isian Singkat",
+      KOMPLEKS: "☑️ PG Kompleks"
+    };
+
+    // Buat ID Unik untuk User di Perangkat/Tab Ini agar semua user muncul bersama di Ruang Utama tanpa bentrok
+    const myUID = "u_" + Math.random().toString(36).slice(2, 8) + "_" + (Date.now() % 10000);
+    const initialAngle = Math.random() * Math.PI * 2;
+    const initialRadius = 14 + Math.random() * 8;
+
+    let playersData = [
+      {
+        uid: myUID,
+        code: "P1",
+        name: localStorage.getItem("edublox_my_name") || ("Siswa " + Math.floor(10 + Math.random() * 89)),
+        avatarIdx: parseInt(localStorage.getItem("edublox_my_avatar") || String(Math.floor(Math.random() * 6)), 10),
+        x: Math.round(Math.cos(initialAngle) * initialRadius),
+        z: Math.round(Math.sin(initialAngle) * initialRadius) + 12,
+        rotY: 0,
+        vy: 0,
+        isJumping: false,
+        autoMode: false,
+        coins: 120,
+        xp: 50,
+        badgeColor: BADGE_PALETTE[Math.floor(Math.random() * BADGE_PALETTE.length)],
+        activeChatBubble: "",
+        chatExpiresAt: 0,
+        quizBldgId: "bldg-a",
+        quizQIdx: 0,
+        answeredMap: {},
+        lastSeen: Date.now(),
+        isBot: false
+      }
+    ];
+
+    function getMyPlayer() {
+      let me = playersData.find(p => p.uid === myUID);
+      if (!me) {
+        me = playersData[0];
+      }
+      return me;
+    }
+
+    function getMyPlayerIndex() {
+      const idx = playersData.findIndex(p => p.uid === myUID);
+      return idx >= 0 ? idx : 0;
+    }
+
+    // 5 Gedung Awal dengan 4 Bentuk Jenis Soal (PG, BS, ISIAN, KOMPLEKS)
+    let buildingsData = [
+      {
+        id: "bldg-a",
+        code: "Gedung A",
+        name: "Gedung A – test kemampuan awal",
+        icon: "🧭",
+        color: "#f43f5e",
+        x: -240,
+        z: -210,
+        summary: "Pre-Test Kemampuan Awal (4 Bentuk Soal): Menguji pemahaman dasar letak geografis Indonesia sebagai Poros Maritim Dunia serta pembagian wilayah Flora & Fauna.",
+        questions: [
+          {
+            type: "PG",
+            q: "Indonesia terletak di posisi silang dunia yang strategis di antara dua samudra besar, yaitu...",
+            options: ["Samudra Hindia dan Samudra Pasifik", "Samudra Atlantik dan Samudra Arktik", "Samudra Pasifik dan Samudra Atlantik", "Samudra Hindia dan Samudra Atlantik"],
+            answer: 0,
+            explanation: "Posisi silang maritim Indonesia berada di antara Samudra Hindia dan Samudra Pasifik serta Benua Asia dan Australia."
+          },
+          {
+            type: "BS",
+            q: "BENAR atau SALAH: Garis Wallace memisahkan fauna Indonesia bagian Barat (Asiatis) dengan bagian Tengah (Peralihan/Wallacea).",
+            options: ["Benar", "Salah"],
+            answer: 0,
+            explanation: "Pernyataan BENAR. Garis Wallace membentang dari Selat Lombok hingga Selat Makassar memisahkan zona Asiatis dan Wallacea."
+          },
+          {
+            type: "ISIAN",
+            q: "Sebutkan nama pulau di Nusa Tenggara Timur yang menjadi habitat asli satwa endemik kadal raksasa purba (Varanus komodoensis)! (Ketik 1 kata nama pulaunya)",
+            answerText: "komodo",
+            explanation: "Pulau Komodo di Nusa Tenggara Timur adalah habitat asli satwa endemik Komodo di zona Peralihan."
+          },
+          {
+            type: "KOMPLEKS",
+            q: "Manakah di bawah ini yang termasuk satwa endemik khas Zona Peralihan (Wallacea)? (Pilih semua jawaban yang benar)",
+            options: ["Anoa Sulawesi", "Komodo", "Harimau Sumatera", "Burung Maleo"],
+            answers: [0, 1, 3],
+            explanation: "Anoa, Komodo, dan Burung Maleo adalah fauna endemik Zona Peralihan (Wallacea), sedangkan Harimau Sumatera adalah fauna Asiatis."
+          }
+        ]
+      },
+      {
+        id: "bldg-b",
+        code: "Gedung B",
+        name: "Gedung B - materi",
+        icon: "🚢",
+        color: "#f59e0b",
+        x: 240,
+        z: -210,
+        summary: "MATERI INTI: (1) 5 Pilar Indonesia Poros Maritim Dunia. (2) Sebaran Flora & Fauna: Asiatis (Paparan Sunda), Peralihan (Wallacea), dan Australis (Paparan Sahul).",
+        questions: [
+          {
+            type: "ISIAN",
+            q: "Berapakah jumlah pilar utama dalam kebijakan Indonesia sebagai Poros Maritim Dunia? (Ketik angkanya saja)",
+            answerText: "5",
+            explanation: "Terdapat 5 Pilar Utama Poros Maritim Dunia: Budaya Maritim, Ekonomi Sumber Daya Laut, Konektivitas/Tol Laut, Diplomasi Maritim, dan Pertahanan Laut."
+          },
+          {
+            type: "PG",
+            q: "Flora di wilayah Paparan Sunda (Sumatera, Jawa, Kalimantan) didominasi oleh karakteristik...",
+            options: ["Hutan hujan tropis lebat dengan tumbuhan Meranti, Rotan, dan Rafflesia arnoldii", "Sabana luas dan stepa kering", "Pohon Matoa, Sagu, dan Eukaliptus", "Padang tundra dan lumut"],
+            answer: 0,
+            explanation: "Flora Asiatis (Paparan Sunda) bercirikan hutan hujan tropis selalu basah, kanopi rapat, meranti, rotan, dan Rafflesia arnoldii."
+          },
+          {
+            type: "BS",
+            q: "BENAR atau SALAH: Berdasarkan UNCLOS 1982, lebar Zona Ekonomi Eksklusif (ZEE) Indonesia diukur sejauh 200 mil laut dari garis pangkal.",
+            options: ["Benar", "Salah"],
+            answer: 0,
+            explanation: "BENAR. Lebar ZEE Indonesia adalah 200 mil laut dari garis pangkal laut teritorial."
+          },
+          {
+            type: "KOMPLEKS",
+            q: "Pilihlah yang termasuk ke dalam 5 Pilar Utama Poros Maritim Dunia! (Centang semua yang benar)",
+            options: ["Pembangunan kembali budaya maritim Indonesia", "Pengembangan infrastruktur dan konektivitas Tol Laut", "Penghapusan seluruh jalur pelayaran ALKI", "Diplomasi maritim dan pertahanan keamanan laut"],
+            answers: [0, 1, 3],
+            explanation: "Budaya maritim, konektivitas Tol Laut, diplomasi maritim, dan pertahanan laut adalah bagian dari 5 Pilar Poros Maritim Dunia."
+          }
+        ]
+      },
+      {
+        id: "bldg-c",
+        code: "Gedung C",
+        name: "Gedung C - berdiskusi",
+        icon: "💬",
+        color: "#10b981",
+        x: -250,
+        z: 210,
+        summary: "FORUM DISKUSI KELOMPOK: Diskusikan bagaimana konektivitas antarpulau di Kepulauan Riau (Selat Malaka & Laut Natuna) mendukung ekonomi maritim dan konservasi pesisir!",
+        questions: [
+          {
+            type: "PG",
+            q: "Studi Kasus Diskusi: Mengapa Selat Malaka dan Laut Natuna Utara sangat strategis bagi posisi Kepulauan Riau sebagai beranda maritim Indonesia?",
+            options: ["Menjadi jalur pelayaran perdagangan global tersibuk yang menghubungkan ekonomi dunia", "Merupakan danau air tawar terbesar di Asia Tenggara", "Tidak pernah dilalui kapal kargo internasional", "Terletak jauh dari jalur ALKI I"],
+            answer: 0,
+            explanation: "Kepulauan Riau berbatasan langsung dengan jalur pelayaran internasional Selat Malaka dan ALKI I di Laut Natuna."
+          },
+          {
+            type: "KOMPLEKS",
+            q: "Ekosistem pesisir manakah yang berfungsi menahan abrasi pantai sekaligus menjadi tempat pemijahan biota laut di wilayah kepulauan? (Pilih 3 ekosistem utama)",
+            options: ["Hutan Mangrove (Bakau)", "Padang Lamun (Seagrass)", "Terumbu Karang (Coral Reef)", "Padang Gurun Pasir"],
+            answers: [0, 1, 2],
+            explanation: "Mangrove, Padang Lamun, dan Terumbu Karang adalah tiga ekosistem kunci pelindung wilayah pesisir dan pulau-pulau kecil."
+          },
+          {
+            type: "BS",
+            q: "BENAR atau SALAH: Pelestarian Komodo di Taman Nasional Komodo merupakan contoh konservasi Ex-Situ (di luar habitat asli).",
+            options: ["Benar", "Salah"],
+            answer: 1,
+            explanation: "SALAH. Taman Nasional Komodo adalah konservasi In-Situ (di dalam habitat aslinya)."
+          }
+        ]
+      },
+      {
+        id: "bldg-d",
+        code: "Gedung D",
+        name: "Gedung D - proyek",
+        icon: "🛠️",
+        color: "#0ea5e9",
+        x: 250,
+        z: 210,
+        summary: "PROYEK SPASIAL & KONSERVASI: Rancang peta zonasi pelabuhan ramah lingkungan (Green Port) dan kawasan konservasi di pulau pesisir!",
+        questions: [
+          {
+            type: "PG",
+            q: "Dalam proyek pembangunan pelabuhan hub internasional yang berkelanjutan (Green Port), langkah ekologis yang tepat adalah...",
+            options: ["Menjaga zona penyangga hijau (mangrove) dan mengelola limbah kapal secara ketat", "Menimbun seluruh terumbu karang tanpa analisis dampak lingkungan", "Membuang air balas kapal langsung ke area budidaya ikan", "Menghapus zona konservasi pesisir"],
+            answer: 0,
+            explanation: "Konsep Green Port memadukan efisiensi logistik maritim dengan perlindungan ekosistem laut."
+          },
+          {
+            type: "ISIAN",
+            q: "Burung Cenderawasih dan Kasuari di Papua termasuk ke dalam zona fauna Indonesia bagian Timur yang disebut tipe fauna apa? (Ketik: Australis / Asiatis)",
+            answerText: "australis",
+            explanation: "Wilayah Papua dan Paparan Sahul memiliki tipe fauna Australis."
+          }
+        ]
+      },
+      {
+        id: "bldg-e",
+        code: "Gedung E",
+        name: "Gedung E – post test: Keliling Bangun Datar",
+        icon: "📐",
+        color: "#9333ea",
+        x: 0,
+        z: -290,
+        summary: "POST-TEST GEOMETRI SPASIAL (4 Bentuk Soal): Menghitung Keliling Bangun Datar pada zona konservasi maritim & taman flora-fauna!",
+        questions: [
+          {
+            type: "ISIAN",
+            q: "Sebuah kolam konservasi penyu berbentuk PERSEGI memiliki panjang sisi 25 meter. Berapa meter keliling kolam konservasi tersebut? (Ketik angkanya saja)",
+            answerText: "100",
+            explanation: "Rumus Keliling Persegi = 4 × sisi = 4 × 25 meter = 100 meter."
+          },
+          {
+            type: "PG",
+            q: "Dermaga pelabuhan Poros Maritim berbentuk PERSEGI PANJANG dengan panjang 40 meter dan lebar 15 meter. Berapakah keliling dermaga tersebut?",
+            options: ["110 meter", "55 meter", "600 meter", "95 meter"],
+            answer: 0,
+            explanation: "Rumus Keliling Persegi Panjang = 2 × (panjang + lebar) = 2 × (40 + 15) = 110 meter."
+          },
+          {
+            type: "BS",
+            q: "BENAR atau SALAH: Zona cagar alam berbentuk SEGITIGA dengan sisi 12 km, 16 km, dan 20 km memiliki keliling 48 km.",
+            options: ["Benar", "Salah"],
+            answer: 0,
+            explanation: "BENAR. Keliling Segitiga = 12 + 16 + 20 = 48 km."
+          },
+          {
+            type: "KOMPLEKS",
+            q: "Manakah bangun datar di bawah ini yang memiliki keliling tepat 60 meter? (Centang semua yang benar)",
+            options: ["Persegi dengan panjang sisi 15 meter", "Persegi panjang dengan panjang 20 meter dan lebar 10 meter", "Segitiga sama sisi dengan panjang sisi 20 meter", "Persegi dengan panjang sisi 20 meter"],
+            answers: [0, 1, 2],
+            explanation: "Persegi sisi 15m (4×15=60m), Persegi panjang 20m×10m (2×30=60m), dan Segitiga sama sisi 20m (3×20=60m) semuanya berkeliling 60 meter."
+          }
+        ]
+      }
+    ];
+
+    const CANTEEN_MENU = [
+      { id: "esteh", name: "Es Teh Manis Segar", emoji: "🧋", cost: 20, xpBonus: 25, desc: "Segarkan dahaga setelah keliling pulau!" },
+      { id: "bakso", name: "Bakso Kuah Maritim", emoji: "🍜", cost: 35, xpBonus: 45, desc: "Bakso hangat penuh energi belajar!" },
+      { id: "burger", name: "Burger Blox Spesial", emoji: "🍔", cost: 40, xpBonus: 55, desc: "Burger tebal bergaya blocky lezat!" },
+      { id: "pizza", name: "Pizza Keju Nusantara", emoji: "🍕", cost: 50, xpBonus: 70, desc: "Pizza keju lumer favorit skuad!" },
+      { id: "eskrim", name: "Es Krim Pelangi", emoji: "🍦", cost: 25, xpBonus: 35, desc: "Manis warna-warni menambah semangat!" },
+      { id: "donat", name: "Donat Cokelat Lumer", emoji: "🍩", cost: 30, xpBonus: 40, desc: "Donat empuk tabur meses warna-warni!" }
+    ];
+
+    const ORNAMENT_CATALOG = [
+      { id: "gazebo", name: "Gazebo Pojok Baca & Literasi", emoji: "🛖", desc: "Interaktif! Dekati untuk membaca kutipan literasi" },
+      { id: "mading", name: "Papan Mading Info & Literasi", emoji: "📋", desc: "Papan informasi literasi maritim & biodiversitas" },
+      { id: "oak", name: "Pohon Rindang Asri & Bunga", emoji: "🌳", desc: "Pohon oak hijau rindang dengan bunga taman" },
+      { id: "sakura", name: "Pohon Sakura Pink Ceria", emoji: "🌸", desc: "Pohon sakura merah muda nan cantik" },
+      { id: "flowerbed", name: "Taman Bunga Pelangi", emoji: "🌷", desc: "Petak bunga warna-warni penghias kota" },
+      { id: "bench", name: "Bangku Taman Santai", emoji: "🪑", desc: "Tempat duduk istirahat warna-warni" },
+      { id: "picnic", name: "Meja Piknik & Payung Ceria", emoji: "⛱️", desc: "Meja santai dengan payung pelangi" },
+      { id: "robot", name: "Patung Robot Maskot Blox", emoji: "🤖", desc: "Patung maskot robot penjaga Edublox City" },
+      { id: "oyen", name: "Monumen Kucing Oyen Raksasa", emoji: "🐈", desc: "Patung Kucing Oyen legendaris kebanggaan kota!" },
+      { id: "fountain", name: "Air Mancur Pelangi Kota", emoji: "⛲", desc: "Air mancur berkilau di taman kota" },
+      { id: "icecart", name: "Gerobak Es Krim Pelangi", emoji: "🍧", desc: "Gerobak es krim ceria di pinggir jalan" }
+    ];
+
+    let scoreLogs = JSON.parse(localStorage.getItem("edublox_score_logs") || "[]");
+
+    /*************************************************************************
+     * 2. FITUR SEMUA USER BERGABUNG DI HALAMAN RUANG UTAMA (LOBBY & PLAZA)
+     *************************************************************************/
+    let onlineUsersPanelOpen = true;
+    let pendingRaycastBuildingData = null;
+
+    function toggleOnlineUsersPanel() {
+      onlineUsersPanelOpen = !onlineUsersPanelOpen;
+      document.getElementById("online-users-panel").classList.toggle("hidden", !onlineUsersPanelOpen);
+      playSFX("click");
+    }
+
+    // Fungsi saat user menekan "Gabung ke Halaman Ruang Utama"
+    function joinMainRoomLobby() {
+      const me = getMyPlayer();
+      const nameVal = document.getElementById("menu-my-name").value.trim();
+      const avatarVal = parseInt(document.getElementById("menu-my-avatar").value || "0", 10);
+      const tokenVal = (document.getElementById("menu-room-token").value.trim() || "MARITIM-01").toUpperCase();
+
+      if (nameVal) {
+        me.name = nameVal;
+        localStorage.setItem("edublox_my_name", nameVal);
+      }
+      me.avatarIdx = avatarVal;
+      localStorage.setItem("edublox_my_avatar", String(avatarVal));
+
+      if (tokenVal !== currentRoomToken) {
+        switchRoomTokenChannel(tokenVal);
+      }
+
+      // Tempatkan karakter di Plaza Halaman Ruang Utama (Melingkari Monumen Kristal 0,0)
+      const myIdx = getMyPlayerIndex();
+      const angle = (myIdx * 1.1) + (Math.random() * 0.4);
+      const radius = 15 + (myIdx % 3) * 4;
+      me.x = Math.round(Math.cos(angle) * radius);
+      me.z = Math.round(Math.sin(angle) * radius) + 8;
+
+      rebuildAllPlayers3D();
+      setCameraFocusTarget("MY");
+      closeModal("modal-main-menu");
+      broadcastMyPresence(true);
+      sendPlayerChatMessage(`Halo semuanya! ${me.name} telah bergabung di Halaman Ruang Utama! 🚀`);
+      playSFX("correct");
+      showToast(`🏝️ Selamat datang di Halaman Ruang Utama [${currentRoomToken}], ${me.name}!`);
+    }
+
+    // Kumpulkan semua karakter di Plaza Halaman Ruang Utama
+    function gatherEveryoneAtMainPlaza() {
+      playersData.forEach((p, idx) => {
+        const ang = (idx / Math.max(1, playersData.length)) * Math.PI * 2;
+        p.x = Math.round(Math.cos(ang) * 16);
+        p.z = Math.round(Math.sin(ang) * 16) + 6;
+        p.rotY = Math.atan2(-p.x, -p.z);
+        if (playerMeshes[idx]) {
+          playerMeshes[idx].position.set(p.x, 0, p.z);
+          playerMeshes[idx].rotation.y = p.rotY;
+        }
+      });
+      setCameraFocusTarget("PLAZA");
+      broadcastMyPresence();
+      playSFX("correct");
+      showToast("📍 Semua karakter berkumpul di Plaza Halaman Ruang Utama!");
+    }
+
+    // Teleport menghampiri teman di Halaman Ruang Utama
+    function teleportToFriendInMainRoom(targetUid) {
+      const friend = playersData.find(p => p.uid === targetUid);
+      const me = getMyPlayer();
+      const myIdx = getMyPlayerIndex();
+      if (!friend || !me) return;
+
+      me.x = friend.x + 4;
+      me.z = friend.z + 4;
+      if (playerMeshes[myIdx]) {
+        playerMeshes[myIdx].position.set(me.x, 0, me.z);
+      }
+      setCameraFocusTarget("MY");
+      broadcastMyPresence();
+      playSFX("jump");
+      showToast(`🏃 Menghampiri ${friend.code} (${friend.name}) di Ruang Utama!`);
+    }
+
+    // Tambah teman simulasi di Plaza Ruang Utama (jika ingin meramaikan ruang saat demo)
+    function spawnBotFriendInMainRoom() {
+      const nextNum = playersData.length + 1;
+      const names = ["Uteh Maritim", "Melor Flora", "Cewet Wallace", "Luna Geometri", "Busu Natuna", "Alang Sahul", "Angah Sunda"];
+      const angle = nextNum * 0.95;
+      const botPlayer = {
+        uid: "bot_" + Date.now() + "_" + nextNum,
+        code: `P${nextNum}`,
+        name: names[(nextNum - 1) % names.length] + ` #${nextNum}`,
+        avatarIdx: (nextNum - 1) % AVATAR_PRESETS.length,
+        x: Math.round(Math.cos(angle) * 18),
+        z: Math.round(Math.sin(angle) * 18) + 8,
+        rotY: 0,
+        vy: 0,
+        isJumping: false,
+        autoMode: true,
+        coins: 120,
+        xp: 50,
+        badgeColor: BADGE_PALETTE[(nextNum - 1) % BADGE_PALETTE.length],
+        activeChatBubble: "Halo! Aku bergabung di Ruang Utama! 👋",
+        chatExpiresAt: Date.now() + 6000,
+        quizBldgId: "bldg-a",
+        quizQIdx: 0,
+        answeredMap: {},
+        lastSeen: Date.now(),
+        isBot: true
+      };
+      playersData.push(botPlayer);
+      reassignPlayerCodes();
+      rebuildAllPlayers3D();
+      renderLobbyAndOnlineUsersList();
+      broadcastMyPresence();
+      playSFX("correct");
+      showToast(`🎉 ${botPlayer.name} bergabung ke Halaman Ruang Utama!`);
+    }
+
+    function reassignPlayerCodes() {
+      playersData.forEach((p, idx) => {
+        p.code = `P${idx + 1}`;
+      });
+    }
+
+    function renderLobbyAndOnlineUsersList() {
+      reassignPlayerCodes();
+      const count = playersData.length;
+
+      const peerStatus = document.getElementById("hud-peer-status");
+      if (peerStatus) peerStatus.textContent = `🟢 ${count} User di Ruang Utama`;
+
+      const btnLabel = document.getElementById("btn-online-users-label");
+      if (btnLabel) btnLabel.textContent = `Ruang Utama (${count})`;
+
+      const lobbyCount = document.getElementById("lobby-online-count");
+      if (lobbyCount) lobbyCount.textContent = count;
+
+      // Update In-Game Online Users Panel (Kiri Atas)
+      const listEl = document.getElementById("online-users-list");
+      if (listEl) {
+        listEl.innerHTML = "";
+        playersData.forEach((p) => {
+          const preset = AVATAR_PRESETS[p.avatarIdx % AVATAR_PRESETS.length];
+          const isMe = p.uid === myUID;
+          const row = document.createElement("div");
+          row.className = `flex items-center justify-between px-2 py-1 rounded-xl border ${isMe ? 'bg-sky-500/25 border-sky-400' : 'bg-slate-800/80 border-slate-700 hover:bg-slate-700'} cursor-pointer`;
+          row.onclick = () => {
+            if (!isMe) teleportToFriendInMainRoom(p.uid);
+          };
+          row.innerHTML = `
+            <div class="flex items-center gap-1.5 truncate">
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-fredoka font-bold text-white" style="background:${p.badgeColor}">${p.code}</span>
+              <span class="font-bold truncate">${preset.emoji} ${escapeHtml(p.name)} ${isMe ? '(Saya)' : ''}</span>
+            </div>
+            <span class="text-[9px] text-amber-300 font-bold shrink-0 ml-1">${isMe ? '📍 Aktif' : '🏃 Hampiri'}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      // Update Lobby Modal Players Grid
+      const gridEl = document.getElementById("lobby-players-grid");
+      if (gridEl) {
+        gridEl.innerHTML = "";
+        playersData.forEach((p) => {
+          const preset = AVATAR_PRESETS[p.avatarIdx % AVATAR_PRESETS.length];
+          const isMe = p.uid === myUID;
+          const card = document.createElement("div");
+          card.className = `p-2.5 rounded-2xl border-2 flex items-center gap-2.5 shadow-sm ${isMe ? 'bg-emerald-50 border-emerald-400' : 'bg-white border-slate-200'}`;
+          card.innerHTML = `
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg text-white font-fredoka font-bold shrink-0" style="background:${p.badgeColor}">
+              ${preset.emoji}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-fredoka font-bold text-xs text-slate-800 truncate">${p.code}: ${escapeHtml(p.name)}</div>
+              <div class="text-[10px] font-bold text-emerald-600">${isMe ? '🌟 Karakter Kamu' : '🟢 Di Ruang Utama'}</div>
+            </div>
+          `;
+          gridEl.appendChild(card);
+        });
+      }
+    }
+
+    // Builder Tambah Gedung Cepat
+    function openQuickAddBuildingModal() {
+      const nextLetter = String.fromCharCode(65 + buildingsData.length);
+      document.getElementById("new-bldg-code").value = `Gedung ${nextLetter}`;
+      document.getElementById("new-bldg-name").value = `Gedung ${nextLetter} – Eksplorasi Maritim & Flora`;
+      openModal("modal-add-building");
+      playSFX("click");
+    }
+
+    function toggleNewBldgCoords() {
+      const mode = document.getElementById("new-bldg-place-mode").value;
+      document.getElementById("new-bldg-manual-box").classList.toggle("hidden", mode !== "MANUAL");
+    }
+
+    function confirmBuildNewBuilding() {
+      const code = document.getElementById("new-bldg-code").value.trim() || `Gedung ${String.fromCharCode(65 + buildingsData.length)}`;
+      const name = document.getElementById("new-bldg-name").value.trim() || `${code} – Topik Baru`;
+      const icon = document.getElementById("new-bldg-icon").value.trim() || "🏢";
+      const color = document.getElementById("new-bldg-color").value || "#14b8a6";
+      const summary = document.getElementById("new-bldg-summary").value.trim() || "Materi pembelajaran interaktif.";
+      const mode = document.getElementById("new-bldg-place-mode").value;
+
+      const templateQuestions = buildSmartFallbackQuestions(name, 4, "MIXED");
+
+      if (mode === "RAYCAST") {
+        pendingRaycastBuildingData = { code, name, icon, color, summary, questions: templateQuestions };
+        closeModal("modal-add-building");
+        closeModal("modal-teacher");
+        closeModal("modal-main-menu");
+        document.body.classList.add("placing-ornament");
+        document.getElementById("raycast-banner").classList.remove("hidden");
+        document.getElementById("raycast-item-name").textContent = `Ketuk tanah 3D di mana saja untuk membangun: ${name}`;
+        return;
+      }
+
+      let x = 0, z = 250;
+      if (mode === "AUTO") {
+        const angle = buildingsData.length * 1.15;
+        const radius = 265;
+        x = Math.round(Math.cos(angle) * radius);
+        z = Math.round(Math.sin(angle) * radius);
+      } else if (mode === "PLAYER") {
+        const p = getMyPlayer();
+        x = Math.round(p.x + 28);
+        z = Math.round(p.z - 28);
+      } else if (mode === "MANUAL") {
+        x = parseFloat(document.getElementById("new-bldg-x").value || "0");
+        z = parseFloat(document.getElementById("new-bldg-z").value || "260");
+      }
+
+      finalizeCreateBuilding3D({ code, name, icon, color, x, z, summary, questions: templateQuestions });
+      closeModal("modal-add-building");
+    }
+
+    function finalizeCreateBuilding3D(bData) {
+      const newBldg = {
+        id: `bldg-${Date.now()}`,
+        code: bData.code,
+        name: bData.name,
+        icon: bData.icon,
+        color: bData.color,
+        x: bData.x,
+        z: bData.z,
+        summary: bData.summary,
+        questions: bData.questions
+      };
+      buildingsData.push(newBldg);
+      rebuildAllBuildings3D();
+      if (!document.getElementById("modal-teacher").classList.contains("hidden")) {
+        loadBuildingIntoTeacherEditor(newBldg.id);
+      }
+      broadcastNewBuildingToPeers(newBldg);
+      playSFX("correct");
+      showToast(`🏢 ${newBldg.name} berhasil dibangun di Halaman Ruang Utama!`);
+    }
+
+    /*************************************************************************
+     * 3. FITUR LIVE CHAT KELAS & BALON CHAT 3D DI ATAS KEPALA
+     *************************************************************************/
+    let chatBoxOpen = true;
+    let chatMessages = [];
+
+    function toggleChatBox() {
+      chatBoxOpen = !chatBoxOpen;
+      const box = document.getElementById("roblox-chat-box");
+      const badge = document.getElementById("chat-unread-badge");
+      box.classList.toggle("hidden", !chatBoxOpen);
+      if (chatBoxOpen) badge.classList.add("hidden");
+      playSFX("click");
+    }
+
+    function handleChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById("chat-input-text");
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+      sendPlayerChatMessage(text);
+    }
+
+    function sendQuickChat(text) {
+      sendPlayerChatMessage(text);
+    }
+
+    function sendPlayerChatMessage(text) {
+      const p = getMyPlayer();
+      const preset = AVATAR_PRESETS[p.avatarIdx % AVATAR_PRESETS.length];
+
+      const msgObj = {
+        id: Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        uid: p.uid,
+        playerCode: p.code,
+        playerName: p.name,
+        emoji: preset.emoji,
+        color: p.badgeColor,
+        text: text,
+        time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
+      };
+
+      receiveChatMessage(msgObj, true);
+    }
+
+    function receiveChatMessage(msgObj, isLocalSender = false) {
+      if (!msgObj || chatMessages.some(m => m.id === msgObj.id)) return;
+      chatMessages.push(msgObj);
+
+      const feed = document.getElementById("chat-messages-feed");
+      const item = document.createElement("div");
+      item.className = "bg-slate-800/90 border border-slate-700 px-2.5 py-1.5 rounded-xl leading-snug break-words";
+      item.innerHTML = `
+        <span class="font-fredoka font-bold" style="color:${msgObj.color}">${msgObj.emoji} [${msgObj.playerCode}] ${escapeHtml(msgObj.playerName)}:</span>
+        <span class="text-white font-semibold ml-1">${escapeHtml(msgObj.text)}</span>
+      `;
+      feed.appendChild(item);
+      feed.scrollTop = feed.scrollHeight;
+
+      if (!chatBoxOpen) {
+        document.getElementById("chat-unread-badge").classList.remove("hidden");
+      }
+
+      const pIdx = playersData.findIndex(x => x.uid === msgObj.uid);
+      if (pIdx >= 0) {
+        playersData[pIdx].activeChatBubble = msgObj.text;
+        playersData[pIdx].chatExpiresAt = Date.now() + 6500;
+        updatePlayerBubbleDOM(pIdx);
+      }
+
+      playSFX("click");
+
+      if (isLocalSender) {
+        broadcastChatEvent(msgObj);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[s]));
+    }
+
+    /*************************************************************************
+     * 4. SISTEM KUIS 100% MANDIRI PER PEMAIN DENGAN 4 BENTUK JENIS SOAL
+     *************************************************************************/
+    let tempComplexSelections = [];
+
+    function openPersonalPhoneQuiz(bldgId) {
+      const p = getMyPlayer();
+      if (bldgId) p.quizBldgId = bldgId;
+      if (!p.quizBldgId) p.quizBldgId = "bldg-a";
+
+      loadPersonalPhoneQuiz(p.quizBldgId);
+      document.getElementById("personal-roblox-quiz-hud").classList.remove("hidden");
+      playSFX("click");
+    }
+
+    function closePersonalPhoneQuiz() {
+      document.getElementById("personal-roblox-quiz-hud").classList.add("hidden");
+      playSFX("click");
+    }
+
+    function loadPersonalPhoneQuiz(bldgId) {
+      const p = getMyPlayer();
+      p.quizBldgId = bldgId;
+      p.quizQIdx = 0;
+
+      const b = buildingsData.find(x => x.id === bldgId) || buildingsData[0];
+      document.getElementById("ig-quiz-icon").textContent = b.icon;
+      document.getElementById("ig-quiz-bldg").textContent = `${b.code.toUpperCase()} • KUIS MANDIRI ${p.code} (${p.name})`;
+      document.getElementById("ig-quiz-title").textContent = b.name;
+      document.getElementById("ig-quiz-switch").value = b.id;
+      document.getElementById("ig-quiz-summary").textContent = b.summary;
+      document.getElementById("ig-quiz-isolation-badge").textContent = `🔒 Kuis Mandiri ${p.name} (Tidak mempengaruhi user lain)`;
+      document.getElementById("ig-quiz-player-score").textContent = `💰 ${p.coins} | ⭐ ${p.xp}`;
+
+      renderPersonalPhoneQuizQuestion();
+    }
+
+    function renderPersonalPhoneQuizQuestion() {
+      const p = getMyPlayer();
+      const b = buildingsData.find(x => x.id === p.quizBldgId) || buildingsData[0];
+      if (!b.questions || b.questions.length === 0) {
+        document.getElementById("ig-quiz-question").textContent = "Belum ada soal di gedung ini.";
+        document.getElementById("ig-quiz-options").innerHTML = "";
+        return;
+      }
+
+      const qIdx = (p.quizQIdx || 0) % b.questions.length;
+      const qObj = b.questions[qIdx];
+      const qType = qObj.type || "PG";
+      const qKey = `${b.id}_${qIdx}`;
+      const previousRecord = p.answeredMap ? p.answeredMap[qKey] : null;
+      tempComplexSelections = previousRecord && Array.isArray(previousRecord.complexChoices) ? [...previousRecord.complexChoices] : [];
+
+      document.getElementById("ig-quiz-counter").textContent = `Soal ${qIdx + 1} / ${b.questions.length}`;
+      document.getElementById("ig-quiz-type-badge").textContent = QUESTION_TYPE_LABELS[qType] || "Pilihan Ganda";
+      document.getElementById("ig-quiz-question").textContent = qObj.q;
+      document.getElementById("ig-quiz-player-score").textContent = `💰 ${p.coins} | ⭐ ${p.xp}`;
+
+      const fb = document.getElementById("ig-quiz-feedback");
+      const optBox = document.getElementById("ig-quiz-options");
+      optBox.innerHTML = "";
+
+      if (qType === "PG") {
+        const letters = ["A", "B", "C", "D"];
+        const btnColors = ["btn-3d-rose", "btn-3d-blue", "btn-3d-amber", "btn-3d-green"];
+        (qObj.options || []).forEach((optText, cIdx) => {
+          const btn = document.createElement("button");
+          const isChosen = previousRecord && previousRecord.choice === cIdx;
+          btn.className = `btn-3d ${btnColors[cIdx % 4]} ${isChosen ? 'ring-4 ring-white' : ''} text-white font-bold p-2.5 rounded-xl text-left flex items-center gap-2.5 text-xs shadow-md`;
+          btn.onclick = () => submitPersonalPhoneQuizAnswer({ type: "PG", choiceIdx: cIdx });
+          btn.innerHTML = `
+            <span class="w-6 h-6 rounded-lg bg-black/25 font-fredoka flex items-center justify-center shrink-0 text-sm">${letters[cIdx]}</span>
+            <span class="leading-snug">${optText}</span>
+          `;
+          optBox.appendChild(btn);
+        });
+      } else if (qType === "BS") {
+        const grid = document.createElement("div");
+        grid.className = "grid grid-cols-2 gap-2.5 pt-1";
+        ["✅ BENAR", "❌ SALAH"].forEach((label, cIdx) => {
+          const btn = document.createElement("button");
+          const isChosen = previousRecord && previousRecord.choice === cIdx;
+          btn.className = `btn-3d ${cIdx === 0 ? 'btn-3d-green' : 'btn-3d-rose'} ${isChosen ? 'ring-4 ring-white' : ''} text-white font-fredoka font-bold py-3.5 rounded-2xl text-sm shadow-lg`;
+          btn.textContent = label;
+          btn.onclick = () => submitPersonalPhoneQuizAnswer({ type: "BS", choiceIdx: cIdx });
+          grid.appendChild(btn);
+        });
+        optBox.appendChild(grid);
+      } else if (qType === "ISIAN") {
+        const wrap = document.createElement("div");
+        wrap.className = "space-y-2 pt-1";
+        const prevVal = previousRecord?.textInput || "";
+        wrap.innerHTML = `
+          <input id="ig-isian-input" type="text" value="${escapeHtml(prevVal)}" placeholder="Ketik jawaban singkat / angka di sini..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 text-white border-2 border-amber-400 font-bold text-xs outline-none" />
+          <button onclick="submitIsianFromHUD()" class="btn-3d btn-3d-green text-white w-full py-2.5 rounded-xl font-fredoka font-bold text-xs shadow-lg">
+            ✍️ Kirim Jawaban Isian Mandiri
+          </button>
+        `;
+        optBox.appendChild(wrap);
+      } else if (qType === "KOMPLEKS") {
+        const wrap = document.createElement("div");
+        wrap.className = "space-y-1.5";
+        (qObj.options || []).forEach((optText, cIdx) => {
+          const checked = tempComplexSelections.includes(cIdx);
+          const row = document.createElement("div");
+          row.className = `p-2.5 rounded-xl border-2 cursor-pointer flex items-center gap-2.5 text-xs font-bold transition ${checked ? 'bg-indigo-600 border-amber-300 text-white' : 'bg-slate-800 border-slate-600 text-slate-200'}`;
+          row.onclick = () => toggleComplexOptionSelection(cIdx);
+          row.innerHTML = `
+            <span class="w-5 h-5 rounded flex items-center justify-center border-2 ${checked ? 'bg-amber-400 border-white text-slate-950' : 'border-slate-400'} font-extrabold text-xs">
+              ${checked ? '✓' : ''}
+            </span>
+            <span class="leading-snug">${optText}</span>
+          `;
+          wrap.appendChild(row);
+        });
+        const submitBtn = document.createElement("button");
+        submitBtn.className = "btn-3d btn-3d-purple text-white w-full py-2.5 rounded-xl font-fredoka font-bold text-xs mt-2 shadow-lg";
+        submitBtn.textContent = "☑️ Periksa Pilihan Ganda Kompleks";
+        submitBtn.onclick = () => submitPersonalPhoneQuizAnswer({ type: "KOMPLEKS", complexChoices: tempComplexSelections });
+        optBox.appendChild(wrap);
+        optBox.appendChild(submitBtn);
+      }
+
+      if (previousRecord) {
+        fb.classList.remove("hidden");
+        if (previousRecord.isCorrect) {
+          fb.className = "p-2.5 rounded-2xl border-2 bg-emerald-950/90 border-emerald-400 text-emerald-200 text-[11px] font-bold leading-snug";
+          fb.innerHTML = `✅ <strong>BENAR! (+25 Koin Pribadi untuk ${escapeHtml(p.name)})</strong><br/>💡 ${qObj.explanation}`;
+        } else {
+          fb.className = "p-2.5 rounded-2xl border-2 bg-rose-950/90 border-rose-400 text-rose-200 text-[11px] font-bold leading-snug";
+          fb.innerHTML = `❌ <strong>Jawabanmu (${escapeHtml(previousRecord.displayAnswer)}) kurang tepat. Kunci: ${escapeHtml(previousRecord.displayKey)}</strong><br/>💡 ${qObj.explanation}`;
+        }
+      } else {
+        fb.classList.add("hidden");
+      }
+    }
+
+    function toggleComplexOptionSelection(cIdx) {
+      if (tempComplexSelections.includes(cIdx)) {
+        tempComplexSelections = tempComplexSelections.filter(i => i !== cIdx);
+      } else {
+        tempComplexSelections.push(cIdx);
+      }
+      playSFX("click");
+      renderPersonalPhoneQuizQuestion();
+    }
+
+    function submitIsianFromHUD() {
+      const inp = document.getElementById("ig-isian-input");
+      if (!inp || !inp.value.trim()) {
+        showToast("⚠️ Ketik jawaban isian terlebih dahulu!");
+        return;
+      }
+      submitPersonalPhoneQuizAnswer({ type: "ISIAN", textInput: inp.value.trim() });
+    }
+
+    function submitPersonalPhoneQuizAnswer(payload) {
+      const p = getMyPlayer();
+      const b = buildingsData.find(x => x.id === p.quizBldgId) || buildingsData[0];
+      const qIdx = (p.quizQIdx || 0) % b.questions.length;
+      const qObj = b.questions[qIdx];
+      if (!qObj) return;
+
+      const qType = qObj.type || "PG";
+      const letters = ["A", "B", "C", "D"];
+      let isCorrect = false;
+      let displayAnswer = "";
+      let displayKey = "";
+
+      if (qType === "PG") {
+        isCorrect = payload.choiceIdx === qObj.answer;
+        displayAnswer = letters[payload.choiceIdx] || "-";
+        displayKey = letters[qObj.answer] || "A";
+      } else if (qType === "BS") {
+        isCorrect = payload.choiceIdx === qObj.answer;
+        displayAnswer = payload.choiceIdx === 0 ? "BENAR" : "SALAH";
+        displayKey = qObj.answer === 0 ? "BENAR" : "SALAH";
+      } else if (qType === "ISIAN") {
+        const cleanUser = String(payload.textInput || "").trim().toLowerCase();
+        const cleanKey = String(qObj.answerText || "").trim().toLowerCase();
+        isCorrect = cleanUser === cleanKey || (cleanKey.length > 2 && cleanUser.includes(cleanKey));
+        displayAnswer = payload.textInput;
+        displayKey = qObj.answerText;
+      } else if (qType === "KOMPLEKS") {
+        const userArr = [...(payload.complexChoices || [])].sort((a, b) => a - b);
+        const keyArr = [...(qObj.answers || [0])].sort((a, b) => a - b);
+        isCorrect = userArr.length === keyArr.length && userArr.every((val, idx) => val === keyArr[idx]);
+        displayAnswer = userArr.map(i => letters[i]).join(", ") || "-";
+        displayKey = keyArr.map(i => letters[i]).join(", ");
+      }
+
+      const qKey = `${b.id}_${qIdx}`;
+      if (!p.answeredMap) p.answeredMap = {};
+
+      const alreadyRewarded = p.answeredMap[qKey]?.rewarded;
+      let pointsEarned = 0;
+
+      if (isCorrect && !alreadyRewarded) {
+        pointsEarned = 25;
+        p.coins += 25;
+        p.xp += 30;
+        playSFX("correct");
+      } else if (isCorrect) {
+        playSFX("correct");
+      } else {
+        playSFX("wrong");
+      }
+
+      p.answeredMap[qKey] = {
+        choice: payload.choiceIdx,
+        textInput: payload.textInput,
+        complexChoices: payload.complexChoices,
+        displayAnswer,
+        displayKey,
+        isCorrect,
+        rewarded: alreadyRewarded || isCorrect
+      };
+
+      const logEntry = {
+        time: new Date().toLocaleString("id-ID"),
+        className: classIdentity,
+        studentName: `${p.code} - ${p.name}`,
+        buildingCode: b.code,
+        subject: QUESTION_TYPE_LABELS[qType] || "Pilihan Ganda",
+        question: `No.${qIdx + 1}: ${qObj.q}`,
+        studentAnswer: displayAnswer,
+        answerKey: displayKey,
+        status: isCorrect ? "BENAR" : "SALAH",
+        points: pointsEarned,
+        totalScore: p.xp
+      };
+      scoreLogs.unshift(logEntry);
+      localStorage.setItem("edublox_score_logs", JSON.stringify(scoreLogs));
+      sendToGoogleWebhook(logEntry);
+
+      renderPersonalPhoneQuizQuestion();
+      renderPersonalBottomHUD();
+      broadcastMyPresence();
+    }
+
+    function nextPersonalQuizQ() {
+      const p = getMyPlayer();
+      const b = buildingsData.find(x => x.id === p.quizBldgId) || buildingsData[0];
+      p.quizQIdx = ((p.quizQIdx || 0) + 1) % b.questions.length;
+      renderPersonalPhoneQuizQuestion();
+      playSFX("click");
+    }
+
+    function prevPersonalQuizQ() {
+      const p = getMyPlayer();
+      const b = buildingsData.find(x => x.id === p.quizBldgId) || buildingsData[0];
+      p.quizQIdx = ((p.quizQIdx || 0) - 1 + b.questions.length) % b.questions.length;
+      renderPersonalPhoneQuizQuestion();
+      playSFX("click");
+    }
+
+    /*************************************************************************
+     * 5. RENDER BOTTOM HUD CONTROLLER
+     *************************************************************************/
+    function toggleSprintTurbo() {
+      sprintTurboActive = !sprintTurboActive;
+      const btn = document.getElementById("my-btn-sprint");
+      if (btn) {
+        btn.textContent = sprintTurboActive ? "🏃 Sprint: ON" : "🚶 Jalan Biasa";
+        btn.className = `btn-3d ${sprintTurboActive ? 'btn-3d-blue' : 'btn-3d-slate'} text-white px-2.5 py-1.5 rounded-2xl font-fredoka font-bold text-xs shadow-lg`;
+      }
+      playSFX("click");
+    }
+
+    function renderPersonalBottomHUD() {
+      const p = getMyPlayer();
+      const preset = AVATAR_PRESETS[p.avatarIdx % AVATAR_PRESETS.length];
+
+      document.getElementById("my-dpad-center-code").textContent = p.code;
+      const badgeEl = document.getElementById("my-phone-badge");
+      badgeEl.textContent = `${preset.emoji} ${p.code}`;
+      badgeEl.style.backgroundColor = p.badgeColor;
+
+      const pillEl = document.getElementById("my-phone-status-pill");
+      pillEl.style.borderColor = p.badgeColor;
+
+      document.getElementById("my-phone-name").textContent = p.name;
+      document.getElementById("my-phone-coins").textContent = `💰 ${p.coins} Koin`;
+      document.getElementById("my-phone-xp").textContent = `⭐ ${p.xp} XP`;
+
+      const autoBtn = document.getElementById("my-btn-auto");
+      autoBtn.textContent = p.autoMode ? "🤖 Auto: ON" : "🖐️ Manual";
+      autoBtn.className = `btn-3d ${p.autoMode ? 'btn-3d-green' : 'btn-3d-slate'} text-white px-2.5 py-1.5 rounded-2xl font-fredoka font-bold text-xs shadow-lg`;
+
+      bindPersonalPhoneDpadEvents();
+    }
+
+    function bindPersonalPhoneDpadEvents() {
+      const dirs = [
+        { id: "my-dpad-up", dir: "up" },
+        { id: "my-dpad-down", dir: "down" },
+        { id: "my-dpad-left", dir: "left" },
+        { id: "my-dpad-right", dir: "right" }
+      ];
+      dirs.forEach(({ id, dir }) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.onpointerdown = (e) => { e.preventDefault(); touchMoveState[dir] = true; };
+        btn.onpointerup = (e) => { e.preventDefault(); touchMoveState[dir] = false; };
+        btn.onpointerleave = () => { touchMoveState[dir] = false; };
+        btn.onpointercancel = () => { touchMoveState[dir] = false; };
+      });
+    }
+
+    function myPlayerJump() {
+      const me = getMyPlayer();
+      if (!me || me.isJumping) return;
+      me.vy = 0.46;
+      me.isJumping = true;
+      playSFX("jump");
+    }
+
+    function myPlayerToggleAuto() {
+      const me = getMyPlayer();
+      if (!me) return;
+      me.autoMode = !me.autoMode;
+      renderPersonalBottomHUD();
+    }
+
+    /*************************************************************************
+     * 6. LINK GABUNG RUANG UTAMA & MULTI-ENGINE REAL-TIME SYNC (MQTT + PEERJS + LOCAL)
+     *************************************************************************/
+    let mqttClient = null;
+    let peerInstance = null;
+    let peerConnections = [];
+    let roomChannel = null;
+
+    function getCleanBaseUrl() {
+      return window.location.href.split("?")[0].split("#")[0];
+    }
+
+    function openInviteLinkModal() {
+      document.getElementById("invite-base-url").value = getCleanBaseUrl();
+      document.getElementById("invite-room-token").value = currentRoomToken;
+      document.getElementById("local-file-warning").classList.toggle("hidden", window.location.protocol !== "file:");
+      updateGeneratedLinks();
+      openModal("modal-invite-link");
+      playSFX("click");
+    }
+
+    function updateGeneratedLinks() {
+      const rawBase = document.getElementById("invite-base-url").value.trim() || getCleanBaseUrl();
+      const cleanToken = (document.getElementById("invite-room-token").value.trim() || "MARITIM-01").toUpperCase();
+      if (cleanToken !== currentRoomToken) {
+        switchRoomTokenChannel(cleanToken);
+      }
+
+      const masterUrl = `${rawBase}?room=${encodeURIComponent(cleanToken)}`;
+      document.getElementById("invite-master-link").value = masterUrl;
+      document.getElementById("invite-qr-img").src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(masterUrl)}`;
+    }
+
+    function copyInviteLink(inputId) {
+      const val = document.getElementById(inputId).value;
+      navigator.clipboard.writeText(val).then(() => {
+        playSFX("correct");
+        showToast("✅ Link Halaman Ruang Utama berhasil disalin!");
+      });
+    }
+
+    function shareToWhatsApp(inputId) {
+      const url = document.getElementById(inputId).value;
+      const text = `🏝️ *Ayo Bergabung ke Halaman Ruang Utama Edublox City By geocity kepulauan!*\n\nKlik link di bawah ini dari HP masing-masing untuk langsung berkumpul di Plaza Ruang Utama *${currentRoomToken}*:\n👉 ${url}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    }
+
+    function checkUrlAutoJoinParameters() {
+      const params = new URLSearchParams(window.location.search);
+      const urlRoom = params.get("room");
+      const urlName = params.get("name");
+
+      if (urlRoom) {
+        currentRoomToken = urlRoom.trim().toUpperCase();
+        document.getElementById("hud-room-token").textContent = currentRoomToken;
+        document.getElementById("menu-room-token").value = currentRoomToken;
+      }
+      if (urlName) {
+        const me = getMyPlayer();
+        me.name = urlName.trim();
+        document.getElementById("menu-my-name").value = me.name;
+      }
+    }
+
+    function switchRoomTokenChannel(newToken) {
+      currentRoomToken = (newToken || "MARITIM-01").trim().toUpperCase();
+      document.getElementById("hud-room-token").textContent = currentRoomToken;
+      document.getElementById("menu-room-token").value = currentRoomToken;
+      initAllRoomSyncEngines();
+      broadcastMyPresence(true);
+    }
+
+    function initAllRoomSyncEngines() {
+      // 1. BroadcastChannel & LocalStorage (Instant Same-Device / Multi-Tab Sync)
+      if (roomChannel) roomChannel.close();
+      if ("BroadcastChannel" in window) {
+        roomChannel = new BroadcastChannel(`edublox_mainroom_${currentRoomToken}`);
+        roomChannel.onmessage = (ev) => handleIncomingNetworkPacket(ev.data);
+      }
+      window.addEventListener("storage", (ev) => {
+        if (ev.key === `edublox_pkt_${currentRoomToken}` && ev.newValue) {
+          try { handleIncomingNetworkPacket(JSON.parse(ev.newValue)); } catch (e) {}
+        }
+      });
+
+      // 2. Public Cloud MQTT over WebSockets (Instant Cross-Phone / Different Network Sync tanpa setup server!)
+      if (typeof mqtt !== "undefined") {
+        try {
+          if (mqttClient) mqttClient.end(true);
+          const topic = `edublox/geocity/mainroom/${currentRoomToken.toLowerCase()}`;
+          mqttClient = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
+            clientId: "edublox_" + myUID,
+            clean: true,
+            connectTimeout: 4000,
+            reconnectPeriod: 3000
+          });
+          mqttClient.on("connect", () => {
+            mqttClient.subscribe(topic, () => {
+              broadcastMyPresence(true);
+            });
+          });
+          mqttClient.on("message", (t, payload) => {
+            try {
+              const data = JSON.parse(payload.toString());
+              handleIncomingNetworkPacket(data);
+            } catch (e) {}
+          });
+        } catch (e) {}
+      }
+
+      // 3. PeerJS WebRTC Mesh Backup
+      if (typeof Peer !== "undefined") {
+        try {
+          if (peerInstance) peerInstance.destroy();
+          const safeToken = currentRoomToken.replace(/[^A-Z0-9]/gi, "").toLowerCase();
+          const hostId = `edublox-plaza-${safeToken}`;
+          peerInstance = new Peer(hostId);
+
+          peerInstance.on("open", () => {
+            broadcastMyPresence(true);
+          });
+
+          peerInstance.on("connection", (conn) => {
+            peerConnections.push(conn);
+            conn.on("open", () => {
+              broadcastMyPresence(true);
+            });
+            conn.on("data", (packet) => {
+              handleIncomingNetworkPacket(packet);
+              peerConnections.forEach(c => {
+                if (c !== conn && c.open) c.send(packet);
+              });
+            });
+          });
+
+          peerInstance.on("error", (err) => {
+            if (err.type === "unavailable-id") {
+              const clientPeer = new Peer();
+              peerInstance = clientPeer;
+              clientPeer.on("open", () => {
+                const conn = clientPeer.connect(hostId);
+                conn.on("open", () => {
+                  peerConnections.push(conn);
+                  broadcastMyPresence(true);
+                });
+                conn.on("data", (packet) => handleIncomingNetworkPacket(packet));
+              });
+            }
+          });
+        } catch (e) {}
+      }
+    }
+
+    // Kirim data karakter saya (dan bot simulasi jika ada) ke semua user di Halaman Ruang Utama
+    function broadcastMyPresence(requestReply = false) {
+      const me = getMyPlayer();
+      const mySnapshots = playersData
+        .filter(p => p.uid === myUID || p.isBot)
+        .map(p => ({
+          uid: p.uid,
+          name: p.name,
+          avatarIdx: p.avatarIdx,
+          x: p.x,
+          z: p.z,
+          rotY: p.rotY,
+          coins: p.coins,
+          xp: p.xp,
+          badgeColor: p.badgeColor,
+          isBot: p.isBot || false
+        }));
+
+      const packet = {
+        type: "PLAYER_SYNC",
+        senderUID: myUID,
+        requestReply: requestReply,
+        snapshots: mySnapshots,
+        timestamp: Date.now()
+      };
+      sendPacketToNetwork(packet);
+    }
+
+    function broadcastChatEvent(msgObj) {
+      sendPacketToNetwork({ type: "CHAT", senderUID: myUID, chat: msgObj });
+    }
+
+    function broadcastNewBuildingToPeers(newBldg) {
+      sendPacketToNetwork({ type: "NEW_BUILDING", senderUID: myUID, building: newBldg });
+    }
+
+    function sendPacketToNetwork(packet) {
+      if (roomChannel) {
+        try { roomChannel.postMessage(packet); } catch (e) {}
+      }
+      try { localStorage.setItem(`edublox_pkt_${currentRoomToken}`, JSON.stringify(packet)); } catch (e) {}
+
+      if (mqttClient && mqttClient.connected) {
+        const topic = `edublox/geocity/mainroom/${currentRoomToken.toLowerCase()}`;
+        try { mqttClient.publish(topic, JSON.stringify(packet)); } catch (e) {}
+      }
+
+      peerConnections.forEach(conn => {
+        if (conn && conn.open) {
+          try { conn.send(packet); } catch (e) {}
+        }
+      });
+    }
+
+    function handleIncomingNetworkPacket(packet) {
+      if (!packet || packet.senderUID === myUID) return;
+
+      if (packet.type === "CHAT" && packet.chat) {
+        receiveChatMessage(packet.chat, false);
+        return;
+      }
+
+      if (packet.type === "NEW_BUILDING" && packet.building) {
+        if (!buildingsData.some(b => b.id === packet.building.id)) {
+          buildingsData.push(packet.building);
+          rebuildAllBuildings3D();
+          showToast(`🏢 Gedung baru ditambahkan ke Ruang Utama: ${packet.building.name}`);
+        }
+        return;
+      }
+
+      if (packet.type === "PLAYER_SYNC" && Array.isArray(packet.snapshots)) {
+        let structureChanged = false;
+
+        packet.snapshots.forEach((inc) => {
+          if (!inc || inc.uid === myUID) return;
+          let existingIdx = playersData.findIndex(p => p.uid === inc.uid);
+
+          if (existingIdx === -1) {
+            // User baru terdeteksi! Langsung tambahkan ke Halaman Ruang Utama
+            playersData.push({
+              uid: inc.uid,
+              code: `P${playersData.length + 1}`,
+              name: inc.name || "Siswa",
+              avatarIdx: inc.avatarIdx || 0,
+              x: inc.x || 0,
+              z: inc.z || 16,
+              rotY: inc.rotY || 0,
+              vy: 0,
+              isJumping: false,
+              autoMode: false,
+              coins: inc.coins || 120,
+              xp: inc.xp || 50,
+              badgeColor: inc.badgeColor || "#0284c7",
+              activeChatBubble: "",
+              chatExpiresAt: 0,
+              quizBldgId: "bldg-a",
+              quizQIdx: 0,
+              answeredMap: {},
+              lastSeen: Date.now(),
+              isBot: inc.isBot || false
+            });
+            structureChanged = true;
+            showToast(`👋 ${inc.name} bergabung di Halaman Ruang Utama!`);
+          } else {
+            const target = playersData[existingIdx];
+            if (target.name !== inc.name || target.avatarIdx !== inc.avatarIdx) {
+              target.name = inc.name;
+              target.avatarIdx = inc.avatarIdx;
+              structureChanged = true;
+            }
+            target.x = inc.x;
+            target.z = inc.z;
+            target.rotY = inc.rotY;
+            target.coins = inc.coins;
+            target.xp = inc.xp;
+            target.lastSeen = Date.now();
+
+            if (playerMeshes[existingIdx]) {
+              playerMeshes[existingIdx].position.x = inc.x;
+              playerMeshes[existingIdx].position.z = inc.z;
+              playerMeshes[existingIdx].rotation.y = inc.rotY;
+            }
+          }
+        });
+
+        if (structureChanged) {
+          rebuildAllPlayers3D();
+        } else {
+          renderLobbyAndOnlineUsersList();
+        }
+
+        // Jika user yang baru masuk meminta balasan daftar hadir, kirimkan posisi kita segera
+        if (packet.requestReply) {
+          setTimeout(() => broadcastMyPresence(false), 250);
+        }
+      }
+    }
+
+    // Heartbeat berkala agar semua user yang baru buka halaman ruang utama langsung saling melihat
+    setInterval(() => {
+      broadcastMyPresence(false);
+    }, 2200);
+
+    /*************************************************************************
+     * 7. WEB AUDIO SYNTHESIZER (100% OFFLINE BGM & SFX)
+     *************************************************************************/
+    let audioCtx = null;
+    let bgmPlaying = false;
+    let bgmInterval = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    }
+
+    function playSFX(type) {
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === "jump") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.exponentialRampToValueAtTime(580, now + 0.18);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+          osc.start(now);
+          osc.stop(now + 0.19);
+        } else if (type === "click") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(520, now);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } else if (type === "correct") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.1);
+          osc.frequency.setValueAtTime(783.99, now + 0.2);
+          osc.frequency.setValueAtTime(1046.5, now + 0.3);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+          osc.start(now);
+          osc.stop(now + 0.52);
+        } else if (type === "wrong") {
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(130, now + 0.35);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.36);
+        }
+      } catch (e) {}
+    }
+
+    function toggleBGM() {
+      initAudio();
+      bgmPlaying = !bgmPlaying;
+      const lbl = document.getElementById("label-bgm");
+      if (bgmPlaying) {
+        lbl.textContent = "ON";
+        const notes = [523.25, 587.33, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33];
+        let step = 0;
+        bgmInterval = setInterval(() => {
+          if (!bgmPlaying || !audioCtx) return;
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(notes[step % notes.length], now);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.005, now + 0.28);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.3);
+          step++;
+        }, 320);
+      } else {
+        lbl.textContent = "OFF";
+        if (bgmInterval) clearInterval(bgmInterval);
+      }
+    }
+
+    /*************************************************************************
+     * 8. THREE.JS 3D WORLD (WILAYAH DIPERLUAS 800x800m + JEMBATAN 4 PULAU SATELIT)
+     *************************************************************************/
+    let scene, camera, renderer, raycaster, mouseVec;
+    let groundMesh, monumentCrystal, sunGroup;
+    let cloudGroups = [];
+    let buildingMeshes = [];
+    let playerMeshes = [];
+    let literacyGazebos = [];
+
+    let camYaw = 0.0;
+    let camPitch = 0.48;
+    let camDistance = 64;
+    let camAutoOrbit = false;
+    let camFocusMode = "MY"; // "MY", "PLAZA", "ALL"
+    let isDraggingCamera = false;
+    let prevPointer = { x: 0, y: 0 };
+    let pendingOrnamentId = null;
+
+    const MARITIME_SATELLITE_ISLANDS = [
+      { id: "island-natuna", x: -460, z: -420, name: "Pulau Natuna (Utara)", bridgeStart: { x: -370, z: -340 } },
+      { id: "island-wallacea", x: 460, z: -420, name: "Pulau Sulawesi (Wallacea)", bridgeStart: { x: 370, z: -340 } },
+      { id: "island-sunda", x: -460, z: 420, name: "Pulau Sumatera (Paparan Sunda)", bridgeStart: { x: -370, z: 340 } },
+      { id: "island-sahul", x: 460, z: 420, name: "Pulau Papua (Paparan Sahul)", bridgeStart: { x: 370, z: 340 } }
+    ];
+
+    function createStudsTexture(repeatCount = 180) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#22c55e";
+      ctx.fillRect(0, 0, 128, 128);
+
+      for (let y = 16; y < 128; y += 32) {
+        for (let x = 16; x < 128; x += 32) {
+          ctx.beginPath();
+          ctx.arc(x, y, 9, 0, Math.PI * 2);
+          ctx.fillStyle = "#16a34a";
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "#4ade80";
+          ctx.stroke();
+        }
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeatCount, repeatCount);
+      return tex;
+    }
+
+    function createTextBillboardSprite(topText, mainText, bgColor = "#1e293b", borderColor = "#facc15") {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 180;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = bgColor;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.roundRect(10, 10, 492, 160, 28);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#fde047";
+      ctx.font = "bold 28px Fredoka, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(topText, 256, 62);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 34px Nunito, sans-serif";
+      ctx.fillText(mainText.slice(0, 28), 256, 120);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(22, 7.6, 1);
+      return sprite;
+    }
+
+    function initThreeWorld() {
+      const container = document.getElementById("canvas-container");
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x38bdf8);
+      scene.fog = new THREE.FogExp2(0x38bdf8, 0.00075);
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 2200);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.domElement.id = "game-canvas";
+      container.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.78);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.95);
+      dirLight.position.set(220, 320, 180);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      dirLight.shadow.camera.left = -420;
+      dirLight.shadow.camera.right = 420;
+      dirLight.shadow.camera.top = 420;
+      dirLight.shadow.camera.bottom = -420;
+      scene.add(dirLight);
+
+      const seaMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(2600, 2600),
+        new THREE.MeshPhongMaterial({ color: 0x0284c7, shininess: 65 })
+      );
+      seaMesh.rotation.x = -Math.PI / 2;
+      seaMesh.position.y = -1.6;
+      scene.add(seaMesh);
+
+      const islandMat = new THREE.MeshLambertMaterial({ map: createStudsTexture(180) });
+      groundMesh = new THREE.Mesh(new THREE.BoxGeometry(ISLAND_SIZE, 4, ISLAND_SIZE), islandMat);
+      groundMesh.position.y = -2;
+      groundMesh.receiveShadow = true;
+      scene.add(groundMesh);
+
+      const satIslandMat = new THREE.MeshLambertMaterial({ map: createStudsTexture(32) });
+      const bridgeMat = new THREE.MeshLambertMaterial({ color: 0xb45309 });
+
+      MARITIME_SATELLITE_ISLANDS.forEach(mp => {
+        const mMesh = new THREE.Mesh(new THREE.BoxGeometry(120, 4, 120), satIslandMat);
+        mMesh.position.set(mp.x, -2, mp.z);
+        scene.add(mMesh);
+
+        const dx = mp.x - mp.bridgeStart.x;
+        const dz = mp.z - mp.bridgeStart.z;
+        const bridgeLen = Math.hypot(dx, dz) + 55;
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(10, 0.6, bridgeLen), bridgeMat);
+        bridge.position.set((mp.x + mp.bridgeStart.x) / 2, 0.25, (mp.z + mp.bridgeStart.z) / 2);
+        bridge.rotation.y = Math.atan2(dx, dz);
+        scene.add(bridge);
+
+        const lhGroup = new THREE.Group();
+        const tower = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 4.8, 26, 8), new THREE.MeshLambertMaterial({ color: 0xfef2f2 }));
+        tower.position.y = 13;
+        const topDome = new THREE.Mesh(new THREE.SphereGeometry(3.8, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+        topDome.position.y = 27;
+        const sprite = createTextBillboardSprite("⚓ PULAU MARITIM", mp.name, "#0f172a", "#38bdf8");
+        sprite.position.y = 35;
+        lhGroup.add(tower, topDome, sprite);
+        lhGroup.position.set(mp.x, 0, mp.z);
+        scene.add(lhGroup);
+
+        createOakTree3D(mp.x - 26, mp.z + 22);
+        createSakuraTree3D(mp.x + 26, mp.z - 22);
+      });
+
+      sunGroup = new THREE.Group();
+      const sunCore = new THREE.Mesh(new THREE.BoxGeometry(26, 26, 26), new THREE.MeshBasicMaterial({ color: 0xfde047 }));
+      const sunHalo = new THREE.Mesh(new THREE.BoxGeometry(34, 34, 34), new THREE.MeshBasicMaterial({ color: 0xfef08a, wireframe: true }));
+      sunGroup.add(sunCore, sunHalo);
+      sunGroup.position.set(310, 195, -290);
+      scene.add(sunGroup);
+
+      for (let i = 0; i < 18; i++) {
+        const cg = new THREE.Group();
+        const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+        const b1 = new THREE.Mesh(new THREE.BoxGeometry(18, 5, 10), cloudMat);
+        const b2 = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 12), cloudMat);
+        b2.position.set(6, 1.5, 1);
+        const b3 = new THREE.Mesh(new THREE.BoxGeometry(12, 4.5, 9), cloudMat);
+        b3.position.set(-7, 0.5, -1);
+        cg.add(b1, b2, b3);
+        cg.position.set(-380 + i * 44, 75 + (i % 3) * 11, -340 + ((i * 73) % 680));
+        cg.userData = { speed: 0.08 + (i % 4) * 0.025 };
+        scene.add(cg);
+        cloudGroups.push(cg);
+      }
+
+      buildCentralPlazaAndMonument();
+      buildCanteen3D();
+      populateInitialLushEnvironment();
+      rebuildAllBuildings3D();
+      rebuildAllPlayers3D();
+      setupCameraAndRaycastEvents();
+    }
+
+    function buildCentralPlazaAndMonument() {
+      const plaza = new THREE.Mesh(new THREE.CylinderGeometry(36, 36, 0.4, 12), new THREE.MeshLambertMaterial({ color: 0xfde68a }));
+      plaza.position.set(0, 0.2, 0);
+      plaza.receiveShadow = true;
+      scene.add(plaza);
+
+      // Ring Penanda Titik Kumpul Halaman Ruang Utama
+      const ring = new THREE.Mesh(new THREE.RingGeometry(16, 18, 32), new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide }));
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(0, 0.42, 0);
+      scene.add(ring);
+
+      const pedestal = new THREE.Mesh(new THREE.BoxGeometry(9, 4.5, 9), new THREE.MeshLambertMaterial({ color: 0x334155 }));
+      pedestal.position.set(0, 2.25, 0);
+      scene.add(pedestal);
+
+      monumentCrystal = new THREE.Mesh(new THREE.OctahedronGeometry(5.5, 0), new THREE.MeshPhongMaterial({ color: 0x38bdf8, emissive: 0x0284c7, shininess: 100 }));
+      monumentCrystal.position.set(0, 11, 0);
+      scene.add(monumentCrystal);
+    }
+
+    function buildCanteen3D() {
+      const cGroup = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(22, 11, 15), new THREE.MeshLambertMaterial({ color: 0xf97316 }));
+      body.position.y = 5.5;
+      const awning = new THREE.Mesh(new THREE.BoxGeometry(24, 1.6, 17), new THREE.MeshLambertMaterial({ color: 0xfef08a }));
+      awning.position.y = 11.5;
+      const sign = createTextBillboardSprite("🍔 KANTIN JAJANAN", "Tukar Koin -> Bonus XP!", "#ea580c", "#fde047");
+      sign.position.y = 17.5;
+      cGroup.add(body, awning, sign);
+      cGroup.position.set(-62, 0, 8);
+      scene.add(cGroup);
+
+      createBench3D(-42, 18);
+      createBench3D(-42, -12);
+      createBench3D(42, 18);
+      createBench3D(42, -12);
+    }
+
+    function populateInitialLushEnvironment() {
+      createOrnament3D("gazebo", 46, -34, "Indonesia sebagai Poros Maritim Dunia memiliki 5 Pilar Utama dan keanekaragaman hayati Wallacea!");
+      createOrnament3D("gazebo", -95, -135, "Garis Wallace memisahkan Fauna Asiatis (Barat) dengan Fauna Peralihan (Wallacea), sedangkan Garis Weber membatasi dengan Fauna Australis.");
+      createOrnament3D("gazebo", 95, 135, "Deklarasi Djuanda 1957 dan UNCLOS 1982 mengukuhkan Indonesia sebagai Negara Kepulauan (Archipelagic State) dengan ZEE 200 mil laut.");
+      createOrnament3D("oyen", -46, -36);
+      createOrnament3D("fountain", 0, 52);
+
+      const coords = [
+        [-340, -320], [-350, -160], [-340, 30], [-350, 190], [-320, 330],
+        [340, -320], [350, -160], [340, 30], [350, 190], [320, 330],
+        [-170, -340], [170, -340], [-170, 340], [170, 340],
+        [-120, -120], [120, -120], [-120, 120], [120, 120],
+        [-280, -45], [280, -45], [-195, 65], [195, 65],
+        [-310, -250], [310, -250], [-310, 250], [310, 250],
+        [-85, -215], [85, -215], [-85, 225], [85, 225],
+        [-210, 0], [210, 0], [0, 195], [0, -185],
+        [-290, -110], [290, -110], [-290, 120], [290, 120]
+      ];
+      coords.forEach((pt, idx) => {
+        const [x, z] = pt;
+        if (idx % 3 === 0) createOakTree3D(x, z);
+        else if (idx % 3 === 1) createPineTree3D(x, z);
+        else createSakuraTree3D(x, z);
+        if (idx % 2 === 0) createFlowerbed3D(x + 8, z + 6);
+      });
+    }
+
+    function createOakTree3D(x, z) {
+      const g = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.BoxGeometry(2.6, 7, 2.6), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+      trunk.position.y = 3.5;
+      const leaves = new THREE.Mesh(new THREE.BoxGeometry(9.5, 8, 9.5), new THREE.MeshLambertMaterial({ color: 0x15803d }));
+      leaves.position.y = 9.5;
+      g.add(trunk, leaves);
+      g.position.set(x, 0, z);
+      scene.add(g);
+    }
+
+    function createPineTree3D(x, z) {
+      const g = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.BoxGeometry(2.4, 6, 2.4), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+      trunk.position.y = 3;
+      const c1 = new THREE.Mesh(new THREE.ConeGeometry(6.5, 8, 4), new THREE.MeshLambertMaterial({ color: 0x065f46 }));
+      c1.position.y = 8.5;
+      const c2 = new THREE.Mesh(new THREE.ConeGeometry(5, 7, 4), new THREE.MeshLambertMaterial({ color: 0x047857 }));
+      c2.position.y = 13;
+      g.add(trunk, c1, c2);
+      g.position.set(x, 0, z);
+      scene.add(g);
+    }
+
+    function createSakuraTree3D(x, z) {
+      const g = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.BoxGeometry(2.6, 7, 2.6), new THREE.MeshLambertMaterial({ color: 0x5c2d16 }));
+      trunk.position.y = 3.5;
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(10, 7.5, 10), new THREE.MeshLambertMaterial({ color: 0xf472b6 }));
+      crown.position.y = 9.5;
+      g.add(trunk, crown);
+      g.position.set(x, 0, z);
+      scene.add(g);
+    }
+
+    function createFlowerbed3D(x, z) {
+      const g = new THREE.Group();
+      const soil = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 6), new THREE.MeshLambertMaterial({ color: 0x713f12 }));
+      soil.position.y = 0.25;
+      g.add(soil);
+      const colors = [0xf43f5e, 0xfacc15, 0xa855f7, 0x38bdf8];
+      for (let i = 0; i < 4; i++) {
+        const fl = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 1.2), new THREE.MeshLambertMaterial({ color: colors[i] }));
+        fl.position.set((i % 2) * 2.4 - 1.2, 0.9, Math.floor(i / 2) * 2.4 - 1.2);
+        g.add(fl);
+      }
+      g.position.set(x, 0, z);
+      scene.add(g);
+    }
+
+    function createBench3D(x, z) {
+      const g = new THREE.Group();
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(6, 0.6, 2.4), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
+      seat.position.y = 1.2;
+      const back = new THREE.Mesh(new THREE.BoxGeometry(6, 1.7, 0.5), new THREE.MeshLambertMaterial({ color: 0xd97706 }));
+      back.position.set(0, 2.1, -0.85);
+      g.add(seat, back);
+      g.position.set(x, 0, z);
+      scene.add(g);
+    }
+
+    function createOrnament3D(typeId, x, z, customQuote = "") {
+      const g = new THREE.Group();
+      if (typeId === "gazebo") {
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 0.8, 6), new THREE.MeshLambertMaterial({ color: 0xd97706 }));
+        base.position.y = 0.4;
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(8.2, 5, 6), new THREE.MeshLambertMaterial({ color: 0xb45309 }));
+        roof.position.y = 8;
+        for (let a = 0; a < 4; a++) {
+          const ang = (a * Math.PI) / 2;
+          const p = new THREE.Mesh(new THREE.BoxGeometry(0.6, 6, 0.6), new THREE.MeshLambertMaterial({ color: 0xfef3c7 }));
+          p.position.set(Math.cos(ang) * 4.8, 3.4, Math.sin(ang) * 4.8);
+          g.add(p);
+        }
+        const quote = customQuote || document.getElementById("ornament-literacy-text")?.value || "Mari membaca! Indonesia adalah negara kepulauan terbesar di dunia.";
+        const sp = createTextBillboardSprite("📖 POJOK LITERASI", "Dekati untuk Membaca!", "#065f46", "#fde047");
+        sp.position.y = 13;
+        g.add(base, roof, sp);
+        literacyGazebos.push({ x, z, quote });
+      } else if (typeId === "mading") {
+        const board = new THREE.Mesh(new THREE.BoxGeometry(9, 5.5, 0.8), new THREE.MeshLambertMaterial({ color: 0x0284c7 }));
+        board.position.y = 4.6;
+        const quote = customQuote || document.getElementById("ornament-literacy-text")?.value || "Info Mading: Garis Wallace & Weber membagi biodiversitas Nusantara!";
+        const sp = createTextBillboardSprite("📋 MADING LITERASI", quote, "#1e3a8a", "#38bdf8");
+        sp.position.y = 10;
+        g.add(board, sp);
+        literacyGazebos.push({ x, z, quote });
+      } else if (typeId === "oak") { createOakTree3D(x, z); return; }
+      else if (typeId === "sakura") { createSakuraTree3D(x, z); return; }
+      else if (typeId === "flowerbed") { createFlowerbed3D(x, z); return; }
+      else if (typeId === "bench") { createBench3D(x, z); return; }
+      else if (typeId === "picnic") {
+        const tbl = new THREE.Mesh(new THREE.BoxGeometry(5, 1.5, 5), new THREE.MeshLambertMaterial({ color: 0xfbbf24 }));
+        tbl.position.y = 0.8;
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 6.5), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+        pole.position.y = 3.2;
+        const umb = new THREE.Mesh(new THREE.ConeGeometry(5.8, 2.5, 8), new THREE.MeshLambertMaterial({ color: 0xec4899 }));
+        umb.position.y = 7;
+        g.add(tbl, pole, umb);
+      } else if (typeId === "robot") {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(4.5, 5.5, 3.5), new THREE.MeshLambertMaterial({ color: 0x38bdf8 }));
+        body.position.y = 3.6;
+        const head = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.6, 3.6), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
+        head.position.y = 8.2;
+        const sp = createTextBillboardSprite("🤖 MASKOT ROBOBLOX", "Semangat Belajar Geografi!", "#0f172a", "#38bdf8");
+        sp.position.y = 13;
+        g.add(body, head, sp);
+      } else if (typeId === "oyen") {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(7, 5.5, 9), new THREE.MeshLambertMaterial({ color: 0xf97316 }));
+        body.position.y = 2.75;
+        const head = new THREE.Mesh(new THREE.BoxGeometry(5.5, 5, 5.5), new THREE.MeshLambertMaterial({ color: 0xfb923c }));
+        head.position.set(0, 7, 2.8);
+        const earL = new THREE.Mesh(new THREE.ConeGeometry(1.4, 2.5, 4), new THREE.MeshLambertMaterial({ color: 0xea580c }));
+        earL.position.set(-1.7, 10.2, 2.8);
+        const earR = earL.clone();
+        earR.position.x = 1.7;
+        const sp = createTextBillboardSprite("🐈 MONUMEN KUCING OYEN", "Raja Santuy Edublox City", "#9a3412", "#fde047");
+        sp.position.y = 14;
+        g.add(body, head, earL, earR, sp);
+      } else if (typeId === "fountain") {
+        const pool = new THREE.Mesh(new THREE.CylinderGeometry(7.5, 7.5, 1.6, 12), new THREE.MeshLambertMaterial({ color: 0xe2e8f0 }));
+        pool.position.y = 0.8;
+        const water = new THREE.Mesh(new THREE.CylinderGeometry(6.6, 6.6, 1.7, 12), new THREE.MeshLambertMaterial({ color: 0x38bdf8 }));
+        water.position.y = 0.85;
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.4, 5.8, 8), new THREE.MeshLambertMaterial({ color: 0x60a5fa }));
+        pillar.position.y = 3.4;
+        g.add(pool, water, pillar);
+      } else if (typeId === "icecart") {
+        const cart = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3.8, 3.8), new THREE.MeshLambertMaterial({ color: 0xf472b6 }));
+        cart.position.y = 2;
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(6, 0.8, 4.4), new THREE.MeshLambertMaterial({ color: 0xfef08a }));
+        roof.position.y = 5.8;
+        g.add(cart, roof);
+      }
+      g.position.set(x, 0, z);
+      scene.add(g);
+    }
+
+    function rebuildAllBuildings3D() {
+      buildingMeshes.forEach(bm => scene.remove(bm));
+      buildingMeshes = [];
+
+      buildingsData.forEach((b) => {
+        const bGroup = new THREE.Group();
+        const dist = Math.hypot(b.x, b.z);
+        const roadMesh = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.25, dist), new THREE.MeshLambertMaterial({ color: 0xfacc15 }));
+        roadMesh.position.set(b.x / 2, 0.13, b.z / 2);
+        roadMesh.rotation.y = Math.atan2(b.x, b.z);
+        scene.add(roadMesh);
+        buildingMeshes.push(roadMesh);
+
+        const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(28, 18, 24), new THREE.MeshLambertMaterial({ color: b.color }));
+        wallMesh.position.y = 9;
+        wallMesh.castShadow = true;
+
+        const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(30, 2.5, 26), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+        roofMesh.position.y = 19;
+
+        const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(6.5, 9.5, 0.8), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+        doorMesh.position.set(0, 4.75, 12.1);
+
+        const billboard = createTextBillboardSprite(`${b.icon} ${b.code.toUpperCase()}`, b.name, b.color, "#ffffff");
+        billboard.position.set(0, 25.5, 0);
+
+        bGroup.add(wallMesh, roofMesh, doorMesh, billboard);
+        bGroup.position.set(b.x, 0, b.z);
+        bGroup.lookAt(0, 0, 0);
+
+        scene.add(bGroup);
+        buildingMeshes.push(bGroup);
+      });
+
+      refreshBuildingDropdowns();
+      rebuildFloatingHTMLLabels();
+    }
+
+    function createRobloxAvatarMesh(player) {
+      const preset = AVATAR_PRESETS[player.avatarIdx % AVATAR_PRESETS.length];
+      const group = new THREE.Group();
+
+      const legMat = new THREE.MeshLambertMaterial({ color: preset.legColor });
+      const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.2, 1.1), legMat);
+      leftLeg.position.set(-0.6, 1.1, 0);
+      const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.2, 1.1), legMat);
+      rightLeg.position.set(0.6, 1.1, 0);
+
+      const torsoMat = new THREE.MeshLambertMaterial({ color: preset.torsoColor });
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.5, 1.2), torsoMat);
+      torso.position.set(0, 3.45, 0);
+
+      const armMat = new THREE.MeshLambertMaterial({ color: preset.headColor });
+      const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.3, 0.9), armMat);
+      leftArm.position.set(-1.75, 3.45, 0);
+      const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.3, 0.9), armMat);
+      rightArm.position.set(1.75, 3.45, 0);
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.8, 1.8), armMat);
+      head.position.set(0, 5.6, 0);
+
+      const hatGroup = new THREE.Group();
+      if (preset.hatType === "CROWN") {
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 0.9, 0.8, 6), new THREE.MeshLambertMaterial({ color: 0xfacc15 }));
+        crown.position.y = 6.8;
+        hatGroup.add(crown);
+      } else if (preset.hatType === "CATEARS") {
+        const eMat = new THREE.MeshLambertMaterial({ color: 0xf472b6 });
+        const e1 = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 4), eMat);
+        e1.position.set(-0.6, 6.9, 0);
+        const e2 = e1.clone();
+        e2.position.x = 0.6;
+        hatGroup.add(e1, e2);
+      } else if (preset.hatType === "ANTENNA") {
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.2), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
+        rod.position.y = 7.0;
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.35), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+        orb.position.y = 7.7;
+        hatGroup.add(rod, orb);
+      } else if (preset.hatType === "REDCAP") {
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0xe11d48 }));
+        cap.position.set(0, 6.7, 0.2);
+        hatGroup.add(cap);
+      } else if (preset.hatType === "WIZARD") {
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(1.4, 2.2, 8), new THREE.MeshLambertMaterial({ color: 0x7e22ce }));
+        cone.position.y = 7.5;
+        hatGroup.add(cone);
+      }
+
+      const overheadSprite = createTextBillboardSprite(`${preset.emoji} ${player.code}`, player.name, player.badgeColor, "#ffffff");
+      overheadSprite.scale.set(8.5, 3.0, 1);
+      overheadSprite.position.set(0, 9.2, 0);
+
+      group.add(leftLeg, rightLeg, torso, leftArm, rightArm, head, hatGroup, overheadSprite);
+      group.position.set(player.x, 0, player.z);
+      group.userData = { leftLeg, rightLeg, leftArm, rightArm };
+      return group;
+    }
+
+    function rebuildAllPlayers3D() {
+      reassignPlayerCodes();
+      playerMeshes.forEach(pm => scene.remove(pm));
+      playerMeshes = [];
+
+      playersData.forEach((p) => {
+        const mesh = createRobloxAvatarMesh(p);
+        scene.add(mesh);
+        playerMeshes.push(mesh);
+      });
+
+      renderLobbyAndOnlineUsersList();
+      renderPersonalBottomHUD();
+      rebuildFloatingHTMLLabels();
+    }
+
+    /*************************************************************************
+     * 9. FLOATING HTML LABELS & ROBLOX 3D BUBBLE CHAT OVERHEAD
+     *************************************************************************/
+    let htmlLabelElements = [];
+
+    function rebuildFloatingHTMLLabels() {
+      const container = document.getElementById("labels-container");
+      container.innerHTML = "";
+      htmlLabelElements = [];
+
+      const monDiv = document.createElement("div");
+      monDiv.className = "floating-label bg-sky-950/90 text-white px-3 py-1 rounded-full border-2 border-sky-300 shadow-lg text-xs font-fredoka font-bold";
+      monDiv.innerHTML = `💎 ${monumentTitle} (Plaza Ruang Utama)`;
+      container.appendChild(monDiv);
+      htmlLabelElements.push({ el: monDiv, getPos: () => new THREE.Vector3(0, 17, 0) });
+
+      playersData.forEach((p, idx) => {
+        const preset = AVATAR_PRESETS[p.avatarIdx % AVATAR_PRESETS.length];
+        const wrapper = document.createElement("div");
+        wrapper.className = "floating-label flex flex-col items-center";
+        wrapper.innerHTML = `
+          <div id="player-bubble-${idx}" class="roblox-chat-bubble hidden"></div>
+          <div class="px-2.5 py-0.5 rounded-full text-white font-fredoka font-bold text-[11px] border-2 border-white shadow-md flex items-center gap-1" style="background:${p.badgeColor}">
+            <span>${preset.emoji}</span><span>${p.code}: ${escapeHtml(p.name)}</span>
+          </div>
+        `;
+        container.appendChild(wrapper);
+        htmlLabelElements.push({
+          el: wrapper,
+          playerIdx: idx,
+          getPos: () => {
+            const m = playerMeshes[idx];
+            return m ? new THREE.Vector3(m.position.x, m.position.y + 7.4, m.position.z) : new THREE.Vector3(0, -999, 0);
+          }
+        });
+        updatePlayerBubbleDOM(idx);
+      });
+
+      buildingsData.forEach((b) => {
+        const bDiv = document.createElement("div");
+        bDiv.className = "floating-label px-2.5 py-1 rounded-xl text-white font-fredoka font-bold text-[11px] border-2 border-white shadow-lg";
+        bDiv.style.backgroundColor = b.color;
+        bDiv.innerHTML = `${b.icon} ${b.name}`;
+        container.appendChild(bDiv);
+        htmlLabelElements.push({
+          el: bDiv,
+          getPos: () => new THREE.Vector3(b.x, 21.0, b.z)
+        });
+      });
+    }
+
+    function updatePlayerBubbleDOM(pIdx) {
+      const bubbleEl = document.getElementById(`player-bubble-${pIdx}`);
+      const p = playersData[pIdx];
+      if (!bubbleEl || !p) return;
+      if (p.activeChatBubble && Date.now() < p.chatExpiresAt) {
+        bubbleEl.textContent = p.activeChatBubble;
+        bubbleEl.classList.remove("hidden");
+      } else {
+        bubbleEl.classList.add("hidden");
+      }
+    }
+
+    function updateFloatingHTMLLabels() {
+      const halfW = window.innerWidth / 2;
+      const halfH = window.innerHeight / 2;
+      const now = Date.now();
+
+      htmlLabelElements.forEach((item) => {
+        if (item.playerIdx !== undefined) {
+          const p = playersData[item.playerIdx];
+          if (p && p.activeChatBubble && now >= p.chatExpiresAt) {
+            p.activeChatBubble = "";
+            updatePlayerBubbleDOM(item.playerIdx);
+          }
+        }
+
+        const worldPos = item.getPos();
+        const proj = worldPos.clone().project(camera);
+        if (proj.z > 1) {
+          item.el.style.opacity = "0";
+        } else {
+          const x = (proj.x * halfW) + halfW;
+          const y = -(proj.y * halfH) + halfH;
+          item.el.style.opacity = "1";
+          item.el.style.left = `${x}px`;
+          item.el.style.top = `${y}px`;
+        }
+      });
+    }
+
+    /*************************************************************************
+     * 10. CONTROL SYSTEM & CAMERA
+     *************************************************************************/
+    const activeKeys = {};
+    const touchMoveState = {};
+
+    window.addEventListener("keydown", (e) => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
+      activeKeys[e.code] = true;
+      if (e.code === "Space") myPlayerJump();
+    });
+
+    window.addEventListener("keyup", (e) => {
+      activeKeys[e.code] = false;
+    });
+
+    function setupCameraAndRaycastEvents() {
+      const dom = renderer.domElement;
+
+      dom.addEventListener("pointerdown", (e) => {
+        if (pendingOrnamentId || pendingRaycastBuildingData) {
+          handleRaycastGroundClick(e);
+          return;
+        }
+        isDraggingCamera = true;
+        prevPointer = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener("pointermove", (e) => {
+        if (!isDraggingCamera) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        camYaw -= dx * 0.007;
+        camPitch = Math.max(0.15, Math.min(1.38, camPitch + dy * 0.006));
+        prevPointer = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener("pointerup", () => {
+        isDraggingCamera = false;
+      });
+
+      dom.addEventListener("wheel", (e) => {
+        camDistance = Math.max(22, Math.min(340, camDistance + e.deltaY * 0.07));
+      });
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    function rotateCameraBy(deltaAngle) {
+      camYaw += deltaAngle;
+      playSFX("click");
+    }
+
+    function toggleAutoOrbit360() {
+      camAutoOrbit = !camAutoOrbit;
+      const btn = document.getElementById("btn-orbit-360");
+      btn.innerHTML = `<span>360°: ${camAutoOrbit ? 'ON' : 'OFF'}</span>`;
+      playSFX("click");
+    }
+
+    function setCameraFocusTarget(val) {
+      camFocusMode = val;
+      const sel = document.getElementById("select-camera-focus");
+      if (sel) sel.value = val;
+    }
+
+    function teleportToBuilding(targetId) {
+      if (!targetId) return;
+
+      const p = getMyPlayer();
+      const myIdx = getMyPlayerIndex();
+
+      if (targetId === "PLAZA") {
+        p.x = 0;
+        p.z = 16;
+        if (playerMeshes[myIdx]) playerMeshes[myIdx].position.set(p.x, 0, p.z);
+        broadcastMyPresence();
+        showToast("🏛️ Kembali ke Plaza Halaman Ruang Utama!");
+        document.getElementById("select-teleport").value = "";
+        return;
+      }
+
+      const satIsland = MARITIME_SATELLITE_ISLANDS.find(isl => isl.id === targetId);
+      if (satIsland) {
+        p.x = satIsland.x;
+        p.z = satIsland.z + 22;
+        if (playerMeshes[myIdx]) playerMeshes[myIdx].position.set(p.x, 0, p.z);
+        broadcastMyPresence();
+        showToast(`⚓ ${p.name} diteleportasi ke ${satIsland.name}!`);
+        document.getElementById("select-teleport").value = "";
+        return;
+      }
+
+      const b = buildingsData.find(item => item.id === targetId);
+      if (!b) return;
+
+      const offsetAngle = Math.atan2(b.x, b.z);
+      p.x = b.x - Math.sin(offsetAngle) * 18;
+      p.z = b.z - Math.cos(offsetAngle) * 18;
+      if (playerMeshes[myIdx]) playerMeshes[myIdx].position.set(p.x, 0, p.z);
+
+      openPersonalPhoneQuiz(b.id);
+      broadcastMyPresence();
+      showToast(`🚀 ${p.name} diteleportasi ke ${b.name}!`);
+      document.getElementById("select-teleport").value = "";
+    }
+
+    /*************************************************************************
+     * 11. HIDE / SHOW TOP & BOTTOM HUD TOOLS
+     *************************************************************************/
+    let topHudVisible = true;
+    let bottomHudVisible = true;
+
+    function toggleTopHUD() {
+      topHudVisible = !topHudVisible;
+      const el = document.getElementById("top-hud");
+      const icon = document.getElementById("icon-toggle-top");
+      el.style.transform = topHudVisible ? "translateY(0)" : "translateY(-120%)";
+      icon.className = topHudVisible ? "fa-solid fa-chevron-up text-xs" : "fa-solid fa-chevron-down text-xs";
+      playSFX("click");
+    }
+
+    function toggleBottomHUD() {
+      bottomHudVisible = !bottomHudVisible;
+      const el = document.getElementById("bottom-hud");
+      const icon = document.getElementById("icon-toggle-bottom");
+      el.style.transform = bottomHudVisible ? "translateY(0)" : "translateY(120%)";
+      icon.className = bottomHudVisible ? "fa-solid fa-chevron-down text-xs" : "fa-solid fa-chevron-up text-xs";
+      playSFX("click");
+    }
+
+    function toggleAllHUD() {
+      if (topHudVisible || bottomHudVisible) {
+        topHudVisible = true;
+        bottomHudVisible = true;
+        toggleTopHUD();
+        toggleBottomHUD();
+        showToast("🖼️ HUD disembunyikan! Klik tombol kanan untuk menampilkan kembali.");
+      } else {
+        toggleTopHUD();
+        toggleBottomHUD();
+      }
+    }
+
+    /*************************************************************************
+     * 12. KANTIN JAJANAN & BUILDER ORNAMEN / RAYCASTER
+     *************************************************************************/
+    function renderCanteenModal() {
+      const p = getMyPlayer();
+      document.getElementById("canteen-buyer-label").textContent = `Dompet ${p.code} (${p.name}):`;
+      document.getElementById("canteen-buyer-wallet").textContent = `💰 Koin: ${p.coins} | ⭐ XP: ${p.xp}`;
+
+      const grid = document.getElementById("canteen-items-grid");
+      grid.innerHTML = "";
+      CANTEEN_MENU.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "bg-amber-50/70 border-2 border-amber-300 rounded-2xl p-4 flex flex-col justify-between gap-2 shadow-sm";
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="text-4xl">${item.emoji}</div>
+            <div>
+              <h4 class="font-fredoka font-bold text-amber-950 text-sm">${item.name}</h4>
+              <p class="text-[11px] text-slate-600">${item.desc}</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-amber-200">
+            <span class="font-fredoka font-bold text-xs text-amber-800">💰 ${item.cost} Koin • ⭐ +${item.xpBonus} XP</span>
+            <button onclick="buyCanteenItem('${item.id}')" class="btn-3d btn-3d-green text-white px-3 py-1.5 rounded-xl font-fredoka font-bold text-xs">
+              Beli Jajan
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function buyCanteenItem(itemId) {
+      const p = getMyPlayer();
+      const food = CANTEEN_MENU.find(f => f.id === itemId);
+      if (!p || !food) return;
+
+      if (p.coins < food.cost) {
+        playSFX("wrong");
+        showToast(`⚠️ Koin ${p.name} belum cukup! Kerjakan kuis mandiri untuk dapat Koin.`);
+        return;
+      }
+      p.coins -= food.cost;
+      p.xp += food.xpBonus;
+      playSFX("correct");
+      renderCanteenModal();
+      renderPersonalBottomHUD();
+      broadcastMyPresence();
+      showToast(`😋 ${p.name} menikmati ${food.name}! Bonus Pribadi +${food.xpBonus} XP!`);
+    }
+
+    function renderOrnamentCatalog() {
+      const grid = document.getElementById("ornament-catalog-grid");
+      grid.innerHTML = "";
+      ORNAMENT_CATALOG.forEach((orn) => {
+        const card = document.createElement("div");
+        card.className = "bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl p-3 flex flex-col justify-between gap-2";
+        card.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="text-3xl">${orn.emoji}</span>
+            <div>
+              <div class="font-fredoka font-bold text-xs text-emerald-950">${orn.name}</div>
+              <div class="text-[10px] text-slate-600">${orn.desc}</div>
+            </div>
+          </div>
+          <button onclick="selectOrnamentToBuild('${orn.id}', '${orn.name}')" class="btn-3d btn-3d-green text-white py-1.5 rounded-xl font-fredoka font-bold text-xs w-full">
+            + Tambahkan ke Kota
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleOrnamentCoordInputs() {
+      const mode = document.getElementById("ornament-place-mode").value;
+      document.getElementById("ornament-manual-coords").classList.toggle("hidden", mode !== "MANUAL");
+    }
+
+    function selectOrnamentToBuild(ornId, ornName) {
+      const mode = document.getElementById("ornament-place-mode").value;
+      const quote = document.getElementById("ornament-literacy-text").value;
+
+      if (mode === "RAYCAST") {
+        pendingOrnamentId = ornId;
+        closeModal("modal-ornaments");
+        document.body.classList.add("placing-ornament");
+        document.getElementById("raycast-banner").classList.remove("hidden");
+        document.getElementById("raycast-item-name").textContent = `Ketuk tanah 3D untuk menaruh: ${ornName}`;
+        return;
+      }
+
+      let x = 0, z = 0;
+      const rand = () => (Math.random() - 0.5) * 95;
+      const activePlayer = getMyPlayer();
+
+      if (mode === "UTARA") { x = rand(); z = -195 + rand() * 0.4; }
+      else if (mode === "BARAT") { x = -215 + rand() * 0.4; z = rand(); }
+      else if (mode === "TIMUR") { x = 215 + rand() * 0.4; z = rand(); }
+      else if (mode === "SELATAN") { x = rand(); z = 195 + rand() * 0.4; }
+      else if (mode === "PINGGIR") { x = 285; z = 285 + rand() * 0.5; }
+      else if (mode === "PLAYER") { x = activePlayer.x + 10; z = activePlayer.z + 10; }
+      else if (mode === "MANUAL") {
+        x = parseFloat(document.getElementById("ornament-coord-x").value || "65");
+        z = parseFloat(document.getElementById("ornament-coord-z").value || "65");
+      }
+
+      createOrnament3D(ornId, x, z, quote);
+      playSFX("correct");
+      closeModal("modal-ornaments");
+      showToast(`🌳 ${ornName} berhasil dibangun di (${Math.round(x)}, ${Math.round(z)})!`);
+    }
+
+    function handleRaycastGroundClick(e) {
+      mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseVec, camera);
+      const intersects = raycaster.intersectObject(groundMesh);
+      if (intersects.length > 0) {
+        const pt = intersects[0].point;
+
+        if (pendingRaycastBuildingData) {
+          finalizeCreateBuilding3D({
+            ...pendingRaycastBuildingData,
+            x: Math.round(pt.x),
+            z: Math.round(pt.z)
+          });
+          pendingRaycastBuildingData = null;
+          cancelRaycastPlacement();
+          return;
+        }
+
+        const quote = document.getElementById("ornament-literacy-text").value;
+        createOrnament3D(pendingOrnamentId, pt.x, pt.z, quote);
+        playSFX("correct");
+        showToast(`✨ Ornamen berhasil ditaruh di titik (${Math.round(pt.x)}, ${Math.round(pt.z)})!`);
+        cancelRaycastPlacement();
+      }
+    }
+
+    function cancelRaycastPlacement() {
+      pendingOrnamentId = null;
+      pendingRaycastBuildingData = null;
+      document.body.classList.remove("placing-ornament");
+      document.getElementById("raycast-banner").classList.add("hidden");
+    }
+
+    /*************************************************************************
+     * 13. TEACHER CUSTOM PANEL, 4 JENIS SOAL EDITOR & AI QUESTION GENERATOR
+     *************************************************************************/
+    function openTeacherModal() {
+      refreshBuildingDropdowns();
+      loadBuildingIntoTeacherEditor(buildingsData[0].id);
+      openModal("modal-teacher");
+    }
+
+    function refreshBuildingDropdowns() {
+      const selTeleport = document.getElementById("select-teleport");
+      const selIgQuiz = document.getElementById("ig-quiz-switch");
+      const selTeacher = document.getElementById("teacher-bldg-select");
+
+      if (selTeleport) {
+        selTeleport.innerHTML = `<option value="">🚀 Teleport Lokasi...</option><option value="PLAZA">🏛️ Plaza Halaman Ruang Utama</option>`;
+        buildingsData.forEach(b => {
+          selTeleport.innerHTML += `<option value="${b.id}">${b.icon} ${b.code}</option>`;
+        });
+        MARITIME_SATELLITE_ISLANDS.forEach(isl => {
+          selTeleport.innerHTML += `<option value="${isl.id}">⚓ ${isl.name}</option>`;
+        });
+      }
+      if (selIgQuiz) {
+        selIgQuiz.innerHTML = "";
+        buildingsData.forEach(b => {
+          selIgQuiz.innerHTML += `<option value="${b.id}">${b.icon} ${b.code}</option>`;
+        });
+      }
+      if (selTeacher) {
+        selTeacher.innerHTML = "";
+        buildingsData.forEach(b => {
+          selTeacher.innerHTML += `<option value="${b.id}">${b.icon} ${b.code} - ${b.name}</option>`;
+        });
+      }
+    }
+
+    function saveArenaIdentity() {
+      classIdentity = document.getElementById("teacher-class-input").value.trim() || classIdentity;
+      monumentTitle = document.getElementById("teacher-arena-title").value.trim() || APP_TITLE;
+      document.getElementById("hud-class-badge").textContent = classIdentity;
+      rebuildFloatingHTMLLabels();
+      showToast("✅ Identitas Kelas & Monumen 3D berhasil diperbarui!");
+    }
+
+    function loadBuildingIntoTeacherEditor(bldgId) {
+      const b = buildingsData.find(x => x.id === bldgId) || buildingsData[0];
+      if (!b) return;
+      document.getElementById("teacher-bldg-select").value = b.id;
+      document.getElementById("teacher-bldg-code").value = b.code;
+      document.getElementById("teacher-bldg-name").value = b.name;
+      document.getElementById("teacher-bldg-icon").value = b.icon;
+      document.getElementById("teacher-bldg-color").value = b.color;
+      document.getElementById("teacher-bldg-summary").value = b.summary || "";
+      renderTeacherQuestionsEditor(b);
+    }
+
+    function saveBuildingMetadata() {
+      const bldgId = document.getElementById("teacher-bldg-select").value;
+      const b = buildingsData.find(x => x.id === bldgId);
+      if (!b) return;
+      b.code = document.getElementById("teacher-bldg-code").value;
+      b.name = document.getElementById("teacher-bldg-name").value;
+      b.icon = document.getElementById("teacher-bldg-icon").value;
+      b.color = document.getElementById("teacher-bldg-color").value;
+      b.summary = document.getElementById("teacher-bldg-summary").value;
+
+      rebuildAllBuildings3D();
+      playSFX("correct");
+      showToast(`🏢 ${b.name} berhasil diperbarui!`);
+    }
+
+    function deleteSelectedBuilding() {
+      if (buildingsData.length <= 1) {
+        showToast("⚠️ Minimal harus ada 1 gedung!");
+        return;
+      }
+      const bldgId = document.getElementById("teacher-bldg-select").value;
+      buildingsData = buildingsData.filter(b => b.id !== bldgId);
+      rebuildAllBuildings3D();
+      loadBuildingIntoTeacherEditor(buildingsData[0].id);
+      showToast("🗑️ Gedung berhasil dihapus.");
+    }
+
+    function renderTeacherQuestionsEditor(b) {
+      const container = document.getElementById("teacher-questions-list");
+      container.innerHTML = "";
+      b.questions.forEach((qItem, qIdx) => {
+        const qType = qItem.type || "PG";
+        const card = document.createElement("div");
+        card.className = "bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 space-y-2.5";
+
+        let answerConfigHtml = "";
+        if (qType === "PG") {
+          const opts = qItem.options || ["Opsi A", "Opsi B", "Opsi C", "Opsi D"];
+          answerConfigHtml = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              ${opts.map((opt, oIdx) => `
+                <div class="flex items-center gap-1.5">
+                  <span class="font-fredoka font-bold text-xs w-5">${["A","B","C","D"][oIdx]}.</span>
+                  <input type="text" value="${escapeHtml(opt)}" onchange="updateQuestionOption(${qIdx}, ${oIdx}, this.value)" class="flex-1 px-2.5 py-1 rounded-lg border border-slate-300 text-xs" />
+                </div>
+              `).join("")}
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-500">Kunci Jawaban Pilihan Ganda:</label>
+              <select onchange="updateQuestionField(${qIdx}, 'answer', parseInt(this.value,10))" class="px-3 py-1 rounded-lg border border-slate-300 text-xs font-bold ml-2">
+                <option value="0" ${qItem.answer === 0 ? 'selected' : ''}>A</option>
+                <option value="1" ${qItem.answer === 1 ? 'selected' : ''}>B</option>
+                <option value="2" ${qItem.answer === 2 ? 'selected' : ''}>C</option>
+                <option value="3" ${qItem.answer === 3 ? 'selected' : ''}>D</option>
+              </select>
+            </div>
+          `;
+        } else if (qType === "BS") {
+          answerConfigHtml = `
+            <div>
+              <label class="text-[10px] font-bold text-slate-500">Kunci Pernyataan Benar / Salah:</label>
+              <select onchange="updateQuestionField(${qIdx}, 'answer', parseInt(this.value,10))" class="px-3 py-1 rounded-lg border border-slate-300 text-xs font-bold ml-2">
+                <option value="0" ${qItem.answer === 0 ? 'selected' : ''}>✅ BENAR</option>
+                <option value="1" ${qItem.answer === 1 ? 'selected' : ''}>❌ SALAH</option>
+              </select>
+            </div>
+          `;
+        } else if (qType === "ISIAN") {
+          answerConfigHtml = `
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 block mb-1">Kunci Kata / Angka Jawaban Isian Singkat:</label>
+              <input type="text" value="${escapeHtml(qItem.answerText || '')}" onchange="updateQuestionField(${qIdx}, 'answerText', this.value)" class="w-full md:w-72 px-3 py-1.5 rounded-lg border-2 border-emerald-400 text-xs font-bold" placeholder="Contoh: 100 atau komodo" />
+            </div>
+          `;
+        } else if (qType === "KOMPLEKS") {
+          const opts = qItem.options || ["Pernyataan 1", "Pernyataan 2", "Pernyataan 3", "Pernyataan 4"];
+          const ansArr = qItem.answers || [0, 1];
+          answerConfigHtml = `
+            <div class="text-[10px] font-bold text-purple-800">Centang kotak di kiri untuk menandai kunci jawaban yang benar:</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              ${opts.map((opt, oIdx) => `
+                <div class="flex items-center gap-2 bg-white p-1.5 rounded-lg border border-purple-200">
+                  <input type="checkbox" ${ansArr.includes(oIdx) ? 'checked' : ''} onchange="toggleTeacherComplexKey(${qIdx}, ${oIdx}, this.checked)" class="w-4 h-4 cursor-pointer" />
+                  <input type="text" value="${escapeHtml(opt)}" onchange="updateQuestionOption(${qIdx}, ${oIdx}, this.value)" class="flex-1 px-2 py-1 rounded border border-slate-200 text-xs" />
+                </div>
+              `).join("")}
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="font-fredoka font-bold text-xs text-indigo-900">Soal #${qIdx + 1}</span>
+              <select onchange="changeQuestionTypeInEditor(${qIdx}, this.value)" class="bg-indigo-100 text-indigo-900 font-fredoka font-bold text-[11px] px-2.5 py-1 rounded-lg border border-indigo-300">
+                <option value="PG" ${qType === 'PG' ? 'selected' : ''}>🅰️ Pilihan Ganda (A/B/C/D)</option>
+                <option value="BS" ${qType === 'BS' ? 'selected' : ''}>⚖️ Benar / Salah</option>
+                <option value="ISIAN" ${qType === 'ISIAN' ? 'selected' : ''}>✍️ Isian Singkat / Angka</option>
+                <option value="KOMPLEKS" ${qType === 'KOMPLEKS' ? 'selected' : ''}>☑️ Pilihan Ganda Kompleks</option>
+              </select>
+            </div>
+            <button onclick="deleteQuestionFromBuilding(${qIdx})" class="text-rose-600 text-xs font-bold hover:underline">🗑️ Hapus Soal</button>
+          </div>
+          <input type="text" value="${escapeHtml(qItem.q)}" onchange="updateQuestionField(${qIdx}, 'q', this.value)" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold" />
+          ${answerConfigHtml}
+          <div>
+            <label class="text-[10px] font-bold text-slate-500">Pembahasan Jawaban:</label>
+            <input type="text" value="${escapeHtml(qItem.explanation || '')}" onchange="updateQuestionField(${qIdx}, 'explanation', this.value)" class="w-full px-2.5 py-1 rounded-lg border border-slate-300 text-xs mt-0.5" />
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function changeQuestionTypeInEditor(qIdx, newType) {
+      const b = buildingsData.find(x => x.id === document.getElementById("teacher-bldg-select").value);
+      if (!b || !b.questions[qIdx]) return;
+      const q = b.questions[qIdx];
+      q.type = newType;
+      if (newType === "PG" && (!q.options || q.options.length < 4)) {
+        q.options = ["Pilihan A (Benar)", "Pilihan B", "Pilihan C", "Pilihan D"];
+        q.answer = 0;
+      } else if (newType === "BS") {
+        q.options = ["Benar", "Salah"];
+        q.answer = 0;
+      } else if (newType === "ISIAN" && !q.answerText) {
+        q.answerText = "komodo";
+      } else if (newType === "KOMPLEKS") {
+        if (!q.options || q.options.length < 4) q.options = ["Pernyataan 1 (Benar)", "Pernyataan 2 (Benar)", "Pernyataan 3", "Pernyataan 4"];
+        if (!Array.isArray(q.answers)) q.answers = [0, 1];
+      }
+      renderTeacherQuestionsEditor(b);
+    }
+
+    function toggleTeacherComplexKey(qIdx, oIdx, isChecked) {
+      const b = buildingsData.find(x => x.id === document.getElementById("teacher-bldg-select").value);
+      if (!b || !b.questions[qIdx]) return;
+      let arr = b.questions[qIdx].answers || [];
+      if (isChecked && !arr.includes(oIdx)) arr.push(oIdx);
+      if (!isChecked) arr = arr.filter(i => i !== oIdx);
+      b.questions[qIdx].answers = arr;
+    }
+
+    function updateQuestionField(qIdx, field, val) {
+      const b = buildingsData.find(x => x.id === document.getElementById("teacher-bldg-select").value);
+      if (b && b.questions[qIdx]) b.questions[qIdx][field] = val;
+    }
+
+    function updateQuestionOption(qIdx, oIdx, val) {
+      const b = buildingsData.find(x => x.id === document.getElementById("teacher-bldg-select").value);
+      if (b && b.questions[qIdx]) b.questions[qIdx].options[oIdx] = val;
+    }
+
+    function addBlankQuestionToBuilding(qType = "PG") {
+      const b = buildingsData.find(x => x.id === document.getElementById("teacher-bldg-select").value);
+      if (!b) return;
+      if (qType === "PG") {
+        b.questions.push({
+          type: "PG",
+          q: "Pertanyaan Pilihan Ganda baru tentang Poros Maritim / Flora Fauna...",
+          options: ["Pilihan A (Benar)", "Pilihan B", "Pilihan C", "Pilihan D"],
+          answer: 0,
+          explanation: "Pembahasan singkat jawaban yang benar."
+        });
+      } else if (qType === "BS") {
+        b.questions.push({
+          type: "BS",
+          q: "BENAR atau SALAH: Kepulauan Riau terletak di jalur strategis Selat Malaka dan Laut Natuna.",
+          options: ["Benar", "Salah"],
+          answer: 0,
+          explanation: "Pernyataan tersebut BENAR."
+        });
+      } else if (qType === "ISIAN") {
+        b.questions.push({
+          type: "ISIAN",
+          q: "Sebuah taman konservasi berbentuk persegi memiliki panjang sisi 20 meter. Berapa meter kelilingnya? (Ketik angka)",
+          answerText: "80",
+          explanation: "Keliling Persegi = 4 × 20 = 80 meter."
+        });
+      } else if (qType === "KOMPLEKS") {
+        b.questions.push({
+          type: "KOMPLEKS",
+          q: "Pilihlah fauna endemik yang hidup di wilayah Indonesia! (Centang semua yang benar)",
+          options: ["Komodo di NTT", "Anoa di Sulawesi", "Burung Cenderawasih di Papua", "Beruang Kutub di Artik"],
+          answers: [0, 1, 2],
+          explanation: "Komodo, Anoa, dan Cenderawasih adalah satwa khas Indonesia."
+        });
+      }
+      renderTeacherQuestionsEditor(b);
+    }
+
+    function deleteQuestionFromBuilding(qIdx) {
+      const b = buildingsData.find(x => x.id === document.getElementById("teacher-bldg-select").value);
+      if (!b) return;
+      b.questions.splice(qIdx, 1);
+      renderTeacherQuestionsEditor(b);
+    }
+
+    async function generateQuestionsWithAI() {
+      const bldgId = document.getElementById("teacher-bldg-select").value;
+      const b = buildingsData.find(x => x.id === bldgId);
+      if (!b) return;
+
+      const promptTopic = document.getElementById("ai-topic-prompt").value.trim();
+      const chosenType = document.getElementById("ai-question-type").value;
+      const count = parseInt(document.getElementById("ai-question-count").value || "4", 10);
+      const mode = document.getElementById("ai-replace-mode").value;
+      const apiKey = document.getElementById("gemini-api-key").value.trim();
+      const statusEl = document.getElementById("ai-status-msg");
+
+      statusEl.textContent = "⏳ Menyusun soal interaktif...";
+      let generated = null;
+
+      if (apiKey) {
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `Buatkan ${count} soal edukatif Bahasa Indonesia tentang: "${promptTopic}" dengan bentuk jenis soal: "${chosenType}" (PG, BS, ISIAN, KOMPLEKS). Kembalikan JSON Array dengan properti: type ("PG"|"BS"|"ISIAN"|"KOMPLEKS"), q (string), options (array 4 string untuk PG/KOMPLEKS atau 2 string untuk BS), answer (integer 0-3 untuk PG/BS), answerText (string untuk ISIAN), answers (array integer untuk KOMPLEKS), explanation (string).`
+                }]
+              }],
+              generationConfig: { responseMimeType: "application/json" }
+            })
+          });
+          const data = await response.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) generated = JSON.parse(rawText);
+        } catch (err) {}
+      }
+
+      if (!Array.isArray(generated) || generated.length === 0) {
+        generated = buildSmartFallbackQuestions(promptTopic, count, chosenType);
+      }
+
+      if (mode === "REPLACE") b.questions = generated;
+      else b.questions.push(...generated);
+
+      renderTeacherQuestionsEditor(b);
+      playSFX("correct");
+      statusEl.textContent = `✅ Berhasil membuat ${generated.length} soal (${chosenType})!`;
+    }
+
+    function buildSmartFallbackQuestions(topic, count, chosenType = "MIXED") {
+      const mixedBank = [
+        {
+          type: "PG",
+          q: "Posisi geografis Indonesia di antara Benua Asia dan Australia serta Samudra Hindia dan Pasifik memberikan keuntungan maritim berupa...",
+          options: ["Menjadi titik simpul perdagangan laut global (Choke Points & ALKI)", "Bebas dari angin muson sepanjang tahun", "Tidak memiliki batas laut dengan negara tetangga", "Seluruh wilayahnya berupa daratan kontinental"],
+          answer: 0,
+          explanation: "Posisi silang Nusantara menjadikan perairan Indonesia jalur utama pelayaran internasional melalui 3 ALKI."
+        },
+        {
+          type: "BS",
+          q: "BENAR atau SALAH: Bunga Rafflesia arnoldii dan Harimau Sumatera merupakan flora dan fauna khas kawasan Paparan Sunda (Asiatis).",
+          options: ["Benar", "Salah"],
+          answer: 0,
+          explanation: "BENAR. Sumatera, Jawa, dan Kalimantan berada di Paparan Sunda (Asiatis)."
+        },
+        {
+          type: "ISIAN",
+          q: "Sebuah keramba jaring apung riset kelautan berbentuk PERSEGI PANJANG memiliki panjang 18 meter dan lebar 12 meter. Berapa meter keliling keramba tersebut? (Ketik angkanya saja)",
+          answerText: "60",
+          explanation: "Keliling Persegi Panjang = 2 × (18 + 12) = 2 × 30 = 60 meter."
+        },
+        {
+          type: "KOMPLEKS",
+          q: "Manakah di bawah ini yang termasuk kawasan konservasi dan fauna khas Zona Peralihan (Wallacea)? (Centang semua yang benar)",
+          options: ["Taman Nasional Komodo di NTT", "Burung Maleo dan Anoa di Sulawesi", "Kanguru Pohon di Papua", "Babirusa di Kepulauan Maluku & Sulawesi"],
+          answers: [0, 1, 3],
+          explanation: "Komodo, Maleo, Anoa, dan Babirusa adalah satwa khas Zona Peralihan (Wallacea)."
+        },
+        {
+          type: "ISIAN",
+          q: "Garis khayal yang membatasi fauna Indonesia bagian Tengah (Peralihan) dengan bagian Timur (Australis) adalah Garis... (Ketik 1 kata)",
+          answerText: "weber",
+          explanation: "Garis Weber membentang di sebelah timur Sulawesi dan Nusa Tenggara membatasi zona Peralihan dengan Australis."
+        },
+        {
+          type: "BS",
+          q: "BENAR atau SALAH: Lahan konservasi mangrove berbentuk segitiga sama sisi dengan panjang sisi 35 meter memiliki keliling 105 meter.",
+          options: ["Benar", "Salah"],
+          answer: 0,
+          explanation: "BENAR. Keliling Segitiga Sama Sisi = 3 × 35 meter = 105 meter."
+        }
+      ];
+
+      if (chosenType === "MIXED") {
+        return mixedBank.slice(0, count);
+      }
+      const filtered = mixedBank.filter(q => q.type === chosenType);
+      while (filtered.length < count) {
+        filtered.push({ ...filtered[filtered.length % filtered.length] });
+      }
+      return filtered.slice(0, count);
+    }
+
+    /*************************************************************************
+     * 14. SPREADSHEET RECAP & EXPORT
+     *************************************************************************/
+    function openSpreadsheetModal() {
+      document.getElementById("webhook-url-input").value = googleWebhookUrl;
+      renderSpreadsheetTable();
+      openModal("modal-spreadsheet");
+    }
+
+    function renderSpreadsheetTable() {
+      const tbody = document.getElementById("spreadsheet-table-body");
+      tbody.innerHTML = "";
+
+      const total = scoreLogs.length;
+      const correct = scoreLogs.filter(x => x.status === "BENAR").length;
+      const acc = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+      document.getElementById("stat-total-logs").textContent = total;
+      document.getElementById("stat-correct-logs").textContent = correct;
+      document.getElementById("stat-accuracy").textContent = `${acc}%`;
+      document.getElementById("stat-player-count").textContent = playersData.length;
+
+      if (total === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400 font-bold">Belum ada data jawaban kuis mandiri.</td></tr>`;
+        return;
+      }
+
+      scoreLogs.forEach((row) => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="p-2 whitespace-nowrap">${row.time}</td>
+          <td class="p-2">${row.className}</td>
+          <td class="p-2 font-bold">${row.studentName}</td>
+          <td class="p-2">${row.buildingCode}</td>
+          <td class="p-2">${row.subject}</td>
+          <td class="p-2 max-w-xs truncate" title="${row.question}">${row.question}</td>
+          <td class="p-2 font-bold">${row.studentAnswer}</td>
+          <td class="p-2 font-bold">${row.answerKey}</td>
+          <td class="p-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${row.status === 'BENAR' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${row.status}</span></td>
+          <td class="p-2 font-bold">${row.points}</td>
+          <td class="p-2 font-bold text-indigo-700">${row.totalScore}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function downloadCSVSpreadsheet() {
+      const headers = ["Waktu", "Kelas", "Nama Murid", "Kode Gedung", "Jenis Soal", "Pertanyaan", "Jawaban Murid", "Kunci Jawaban", "Status", "Poin", "Skor Total"];
+      const rows = scoreLogs.map(r => [
+        r.time, r.className, r.studentName, r.buildingCode, r.subject, r.question, r.studentAnswer, r.answerKey, r.status, r.points, r.totalScore
+      ]);
+      const csvLines = [
+        headers.join(","),
+        ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      ];
+      const csvString = "\uFEFF" + csvLines.join("\r\n");
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Rekap_Edublox_City_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("📥 File CSV Excel berhasil diunduh!");
+    }
+
+    function copyTSVToClipboard() {
+      const headers = ["Waktu", "Kelas", "Nama Murid", "Kode Gedung", "Jenis Soal", "Pertanyaan", "Jawaban Murid", "Kunci Jawaban", "Status", "Poin", "Skor Total"];
+      const rows = scoreLogs.map(r => [
+        r.time, r.className, r.studentName, r.buildingCode, r.subject, r.question, r.studentAnswer, r.answerKey, r.status, r.points, r.totalScore
+      ]);
+      const tsv = [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\n");
+      navigator.clipboard.writeText(tsv).then(() => {
+        showToast("📋 Tabel disalin! Tekan Ctrl+V di Google Sheets / Excel.");
+      });
+    }
+
+    function copyAppsScriptCode() {
+      const code = `function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    data.time, data.className, data.studentName,
+    data.buildingCode, data.subject, data.question,
+    data.studentAnswer, data.answerKey, data.status,
+    data.points, data.totalScore
+  ]);
+  return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+}`;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast("📋 Kode Apps Script doPost(e) berhasil disalin!");
+      });
+    }
+
+    function saveWebhookURL() {
+      googleWebhookUrl = document.getElementById("webhook-url-input").value.trim();
+      localStorage.setItem("edublox_webhook_url", googleWebhookUrl);
+      showToast("☁️ URL Webhook berhasil disimpan!");
+    }
+
+    function sendToGoogleWebhook(entry) {
+      if (!googleWebhookUrl) return;
+      fetch(googleWebhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry)
+      }).catch(() => {});
+    }
+
+    function clearScoreLogs() {
+      scoreLogs = [];
+      localStorage.removeItem("edublox_score_logs");
+      renderSpreadsheetTable();
+      showToast("🗑️ Log nilai direset.");
+    }
+
+    /*************************************************************************
+     * 15. MODAL & TOAST HELPERS
+     *************************************************************************/
+    function openModal(id) {
+      if (id === "modal-canteen") renderCanteenModal();
+      if (id === "modal-ornaments") renderOrnamentCatalog();
+      if (id === "modal-main-menu") renderLobbyAndOnlineUsersList();
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const box = document.getElementById("toast-box");
+      const txt = document.getElementById("toast-text");
+      txt.textContent = msg;
+      box.classList.remove("opacity-0", "translate-y-[-10px]");
+      box.classList.add("opacity-100", "translate-y-0");
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        box.classList.add("opacity-0", "translate-y-[-10px]");
+        box.classList.remove("opacity-100", "translate-y-0");
+      }, 3200);
+    }
+
+    /*************************************************************************
+     * 16. MAIN GAME LOOP
+     *************************************************************************/
+    let lastDoorTriggerTime = 0;
+    let lastGazeboTriggerTime = 0;
+    let clock = new THREE.Clock();
+
+    function animateGameLoop() {
+      requestAnimationFrame(animateGameLoop);
+      const elapsed = clock.getElapsedTime();
+
+      if (sunGroup) {
+        sunGroup.rotation.y += 0.005;
+        sunGroup.rotation.z += 0.003;
+      }
+      if (monumentCrystal) {
+        monumentCrystal.rotation.y += 0.02;
+        monumentCrystal.position.y = 11 + Math.sin(elapsed * 2.5) * 0.8;
+      }
+
+      cloudGroups.forEach((cg) => {
+        cg.position.x += cg.userData.speed;
+        if (cg.position.x > 390) cg.position.x = -390;
+      });
+
+      const baseSpeed = sprintTurboActive ? 0.85 : 0.48;
+      let iMoved = false;
+
+      playersData.forEach((p, idx) => {
+        const mesh = playerMeshes[idx];
+        if (!mesh) return;
+
+        const isMe = p.uid === myUID;
+        let dx = 0, dz = 0;
+
+        if (isMe) {
+          if (activeKeys["KeyW"] || activeKeys["ArrowUp"] || touchMoveState["up"]) dz -= 1;
+          if (activeKeys["KeyS"] || activeKeys["ArrowDown"] || touchMoveState["down"]) dz += 1;
+          if (activeKeys["KeyA"] || activeKeys["ArrowLeft"] || touchMoveState["left"]) dx -= 1;
+          if (activeKeys["KeyD"] || activeKeys["ArrowRight"] || touchMoveState["right"]) dx += 1;
+        }
+
+        if ((isMe || p.isBot) && p.autoMode && dx === 0 && dz === 0) {
+          dx = Math.sin(elapsed * 0.65 + idx * 1.7) * 0.6;
+          dz = Math.cos(elapsed * 0.5 + idx * 1.7) * 0.6;
+        }
+
+        if ((isMe || p.isBot) && (dx !== 0 || dz !== 0)) {
+          const moveAngle = isMe ? (Math.atan2(dx, dz) + camYaw) : Math.atan2(dx, dz);
+          p.x = Math.max(-WORLD_BOUND, Math.min(WORLD_BOUND, p.x + Math.sin(moveAngle) * (p.isBot ? 0.35 : baseSpeed)));
+          p.z = Math.max(-WORLD_BOUND, Math.min(WORLD_BOUND, p.z + Math.cos(moveAngle) * (p.isBot ? 0.35 : baseSpeed)));
+          p.rotY = moveAngle;
+          mesh.rotation.y = p.rotY;
+          if (isMe) iMoved = true;
+
+          const swing = Math.sin(elapsed * 14) * 0.55;
+          mesh.userData.leftLeg.rotation.x = swing;
+          mesh.userData.rightLeg.rotation.x = -swing;
+          mesh.userData.leftArm.rotation.x = -swing;
+          mesh.userData.rightArm.rotation.x = swing;
+        } else {
+          mesh.userData.leftLeg.rotation.x = 0;
+          mesh.userData.rightLeg.rotation.x = 0;
+          mesh.userData.leftArm.rotation.x = 0;
+          mesh.userData.rightArm.rotation.x = 0;
+        }
+
+        if (p.isJumping) {
+          mesh.position.y += p.vy;
+          p.vy -= 0.024;
+          if (mesh.position.y <= 0) {
+            mesh.position.y = 0;
+            p.vy = 0;
+            p.isJumping = false;
+          }
+        }
+
+        mesh.position.x = p.x;
+        mesh.position.z = p.z;
+
+        // Trigger pintu gedung HANYA untuk karakter saya sendiri (100% Mandiri)
+        if (isMe) {
+          const now = Date.now();
+          if (now - lastDoorTriggerTime > 10000) {
+            buildingsData.forEach((b) => {
+              if (Math.hypot(p.x - b.x, p.z - b.z) < 17.5) {
+                lastDoorTriggerTime = now;
+                openPersonalPhoneQuiz(b.id);
+              }
+            });
+          }
+
+          if (now - lastGazeboTriggerTime > 12000) {
+            literacyGazebos.forEach((gz) => {
+              if (Math.hypot(p.x - gz.x, p.z - gz.z) < 9.0) {
+                lastGazeboTriggerTime = now;
+                document.getElementById("literacy-popup-quote").textContent = gz.quote;
+                openModal("modal-literacy-read");
+                p.xp += 10;
+                renderPersonalBottomHUD();
+              }
+            });
+          }
+        }
+      });
+
+      if (iMoved && Math.random() < 0.35) {
+        broadcastMyPresence(false);
+      }
+
+      if (camAutoOrbit) camYaw += 0.0045;
+
+      let focusX = 0, focusZ = 0;
+      if (camFocusMode === "MY") {
+        const me = getMyPlayer();
+        focusX = me.x;
+        focusZ = me.z;
+      } else if (camFocusMode === "PLAZA") {
+        focusX = 0;
+        focusZ = 0;
+      } else {
+        playersData.forEach(p => { focusX += p.x; focusZ += p.z; });
+        focusX /= Math.max(1, playersData.length);
+        focusZ /= Math.max(1, playersData.length);
+      }
+
+      const camX = focusX + Math.sin(camYaw) * Math.cos(camPitch) * camDistance;
+      const camY = Math.sin(camPitch) * camDistance + 4;
+      const camZ = focusZ + Math.cos(camYaw) * Math.cos(camPitch) * camDistance;
+
+      camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.14);
+      camera.lookAt(focusX, 3.5, focusZ);
+
+      renderer.render(scene, camera);
+      updateFloatingHTMLLabels();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const me = getMyPlayer();
+      document.getElementById("menu-my-name").value = me.name;
+      document.getElementById("menu-my-avatar").value = String(me.avatarIdx);
+
+      checkUrlAutoJoinParameters();
+      initThreeWorld();
+      initAllRoomSyncEngines();
+      renderLobbyAndOnlineUsersList();
+      renderPersonalBottomHUD();
+      animateGameLoop();
+    });
+  </script>
+</body>
+</html>
